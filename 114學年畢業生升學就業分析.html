@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>114學年度 大雅國中畢業生升學就業視覺化分析</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(22, 28, 45, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary-glow: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            --accent-glow: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --public-color: #10b981;
+            --private-color: #3b82f6;
+            --none-color: #ef4444;
+            --day-color: #06b6d4;
+            --night-color: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 2.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.05em;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(16px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--card-border);
+            transition: background 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .stat-card.primary::before { background: var(--primary-glow); }
+        .stat-card.accent::before { background: var(--accent-glow); }
+        .stat-card.warning::before { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .stat-card.danger::before { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); }
+
+        .stat-card .label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card .sub-value {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(16px);
+            position: relative;
+        }
+
+        .chart-card.col-6 { grid-column: span 6; }
+        .chart-card.col-8 { grid-column: span 8; }
+        .chart-card.col-4 { grid-column: span 4; }
+        .chart-card.col-12 { grid-column: span 12; }
+
+        @media (max-width: 1024px) {
+            .chart-card.col-6, .chart-card.col-8, .chart-card.col-4 {
+                grid-column: span 12;
+            }
+        }
+
+        .chart-card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 320px;
+        }
+
+        /* Explorer Section */
+        .explorer-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(16px);
+            margin-bottom: 2.5rem;
+        }
+
+        .explorer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .explorer-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            width: 280px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+        }
+
+        .class-filter {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 0.5rem 0.8rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--primary-glow);
+            color: var(--text-main);
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+        }
+
+        /* Table Styles */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: rgba(0, 0, 0, 0.15);
+            margin-bottom: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge.public {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--public-color);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .badge.private {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--private-color);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .badge.none {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--none-color);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .badge.day {
+            background-color: rgba(6, 182, 212, 0.1);
+            color: var(--day-color);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+
+        .badge.night {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--night-color);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .pagination-info {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .pagination-nav {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--card-border);
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>114學年度 大雅國中畢業生升學就業視覺化分析</h1>
+            <p>輔導室資料組製 • 數據分析與視覺化面板</p>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="label">畢業總人數</div>
+                <div class="value">336</div>
+                <div class="sub-value">全校 13 個班級畢業生</div>
+            </div>
+            <div class="stat-card accent">
+                <div class="label">升學學生人數</div>
+                <div class="value">332</div>
+                <div class="sub-value">升學率 98.81%</div>
+            </div>
+            <div class="stat-card danger">
+                <div class="label">未升學未就業 / 自學</div>
+                <div class="value">4</div>
+                <div class="sub-value">佔比 1.19%</div>
+            </div>
+            <div class="stat-card accent">
+                <div class="label">公立學校就讀人數</div>
+                <div class="value">225</div>
+                <div class="sub-value">升學者就讀公立比例 67.77%</div>
+            </div>
+            <div class="stat-card primary">
+                <div class="label">私立學校就讀人數</div>
+                <div class="value">107</div>
+                <div class="sub-value">升學者就讀私立比例 32.23%</div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="dashboard-grid">
+            <!-- Public vs Private -->
+            <div class="chart-card col-4">
+                <h3>公私立學校分布 <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">（含未升學）</span></h3>
+                <div class="chart-container">
+                    <canvas id="pubPrivChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Day vs Night -->
+            <div class="chart-card col-4">
+                <h3>日間部 vs 進修部/夜間部 <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted);">（含未升學）</span></h3>
+                <div class="chart-container">
+                    <canvas id="dayNightChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Admission Channels -->
+            <div class="chart-card col-4">
+                <h3>入學管道分布</h3>
+                <div class="chart-container">
+                    <canvas id="channelChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Schools -->
+            <div class="chart-card col-6">
+                <h3>熱門升學學校 Top 12</h3>
+                <div class="chart-container" style="height: 420px;">
+                    <canvas id="topSchoolsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Clusters Distribution -->
+            <div class="chart-card col-6">
+                <h3>升學職群與學程分布</h3>
+                <div class="chart-container" style="height: 420px;">
+                    <canvas id="clusterChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Explorer -->
+        <div class="explorer-section">
+            <div class="explorer-header">
+                <h2>畢業生升學明細總覽與篩選</h2>
+                <div class="controls">
+                    <input type="text" class="search-box" id="searchBox" placeholder="搜尋姓名、學校、科系...">
+                    <div class="class-filter" id="classFilter">
+                        <button class="filter-btn active" data-class="all">全部</button>
+                        <!-- Class buttons generated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">班級</th>
+                            <th style="width: 80px;">座號</th>
+                            <th style="width: 120px;">姓名</th>
+                            <th style="width: 200px;">升學學校</th>
+                            <th style="width: 180px;">科別/系所</th>
+                            <th style="width: 120px;">類型</th>
+                            <th style="width: 150px;">所屬職群/學程</th>
+                            <th style="width: 100px;">日夜校</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody">
+                        <!-- Student rows loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <div class="pagination-info" id="paginationInfo">
+                    顯示第 1 到 15 筆，共 336 筆
+                </div>
+                <div class="pagination-nav">
+                    <button class="nav-btn" id="prevBtn" disabled>上一頁</button>
+                    <button class="nav-btn" id="nextBtn">下一頁</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>© 115學年度資料組大雅國中升學追蹤系統 • 網頁分析面板系統</p>
+        </footer>
+    </div>
+
+    <!-- Data Injection -->
+    <script>
+        const graduatesData = [{"class": 301, "seat": 1, "name": "王秉豪", "school": "東勢高工", "dept": "室內設計科", "entry": "1", "cluster": "設計群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立東勢高工"}, {"class": 301, "seat": 2, "name": "王彥綸", "school": "文華高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立文華高中"}, {"class": 301, "seat": 3, "name": "吳任豐", "school": "臺中高工", "dept": "電子科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 301, "seat": 4, "name": "呂程渝", "school": "大甲高工", "dept": "電子科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立大甲高工"}, {"class": 301, "seat": 5, "name": "李安育", "school": "豐原高中", "dept": "多媒體設計學科", "entry": "1", "cluster": "設計群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 301, "seat": 6, "name": "林雍峻", "school": "中科實中", "dept": "普通科", "entry": "12", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "國立中科實中"}, {"class": 301, "seat": 7, "name": "姜孟凱", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 301, "seat": 8, "name": "張瑞駿", "school": "宜寧高中", "dept": "電機科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立宜寧高中"}, {"class": 301, "seat": 9, "name": "曹鈞智", "school": "臺中二中", "dept": "冷凍空調科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中二中"}, {"class": 301, "seat": 10, "name": "陳秉杰", "school": "明道高中", "dept": "電子科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立明道高中"}, {"class": 301, "seat": 11, "name": "陳琦升", "school": "臺中高工", "dept": "控制科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 301, "seat": 12, "name": "蔡念祖", "school": "新民高中", "dept": "電機科", "entry": "13", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 301, "seat": 13, "name": "何依星", "school": "豐原高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 301, "seat": 14, "name": "杜庭芸", "school": "新民高中", "dept": "應用日語科", "entry": "1", "cluster": "外語群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 301, "seat": 15, "name": "林庭慧", "school": "僑泰高中", "dept": "餐飲科", "entry": "8", "cluster": "餐旅群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 301, "seat": 16, "name": "林詠薇", "school": "中科實中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "國立中科實中"}, {"class": 301, "seat": 17, "name": "林鈺善", "school": "臺中家商", "dept": "流行服飾", "entry": "8", "cluster": "家政群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中家商"}, {"class": 301, "seat": 18, "name": "馬瑞彤", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 301, "seat": 19, "name": "張衣柔", "school": "大明高中", "dept": "多媒體設計科", "entry": "1", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立大明高中"}, {"class": 301, "seat": 20, "name": "張冠愉", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 301, "seat": 21, "name": "陳宛吟", "school": "文華高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立文華高中"}, {"class": 301, "seat": 22, "name": "陳睿妤", "school": "新民高中", "dept": "應用日語科", "entry": "1", "cluster": "外語群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 301, "seat": 23, "name": "賴宥蓁", "school": "臺中女中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中女中"}, {"class": 301, "seat": 24, "name": "曾景泰", "school": "青年高中", "dept": "體育班", "entry": "10", "cluster": "體育專班", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立青年高中"}, {"class": 301, "seat": 25, "name": "黃品翔", "school": "僑泰高中", "dept": "汽修科", "entry": "13", "cluster": "動力機械群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 301, "seat": 26, "name": "蔡福峰", "school": "仁德醫專", "dept": "護理科", "entry": "15", "cluster": "醫護群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立仁德醫專"}, {"class": 302, "seat": 1, "name": "王奎壬", "school": "豐原高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 302, "seat": 2, "name": "周展亮", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 302, "seat": 3, "name": "紀瑞浧", "school": "新民高中", "dept": "資訊科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 302, "seat": 4, "name": "郭東昀", "school": "永靖高工", "dept": "化工科", "entry": "變更型區(彰化區)", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "國立永靖高工"}, {"class": 302, "seat": 5, "name": "曾偉豪", "school": "新民高中", "dept": "多媒體設計", "entry": "1", "cluster": "設計群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 302, "seat": 6, "name": "童楷嘉", "school": "豐原高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 302, "seat": 7, "name": "黃彥霖", "school": "西苑高中", "dept": "普通科", "entry": "12", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 302, "seat": 8, "name": "黃柏豪", "school": "新民高中", "dept": "商業經營", "entry": "1", "cluster": "商業與管理群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 302, "seat": 9, "name": "廖柏譽", "school": "臺中高工", "dept": "控制科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 302, "seat": 10, "name": "劉柏葳", "school": "大甲高工", "dept": "電機科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立大甲高工"}, {"class": 302, "seat": 11, "name": "譚宇翔", "school": "宜寧高中", "dept": "普通科", "entry": "1 (跨區)", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立宜寧高中"}, {"class": 302, "seat": 12, "name": "賴俊維", "school": "大甲高工", "dept": "電子科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立大甲高工"}, {"class": 302, "seat": 13, "name": "吳家渝", "school": "清水高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立清水高中"}, {"class": 302, "seat": 14, "name": "吳雅蕙", "school": "僑泰高中", "dept": "多媒體", "entry": "1", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 302, "seat": 15, "name": "林尚萱", "school": "新民高中", "dept": "商業經營", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 302, "seat": 16, "name": "高子琦", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 302, "seat": 17, "name": "張雲婷", "school": "豐原高商", "dept": "國貿科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 302, "seat": 18, "name": "張瑜庭", "school": "大明高中", "dept": "美工科", "entry": "1", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立大明高中"}, {"class": 302, "seat": 19, "name": "盧妍潔", "school": "弘文高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立弘文高中"}, {"class": 302, "seat": 20, "name": "陳芷珊", "school": "臺中高工", "dept": "資訊科", "entry": "1", "cluster": "電機與電子群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 302, "seat": 21, "name": "陳逸家", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 302, "seat": 22, "name": "黃雨葳", "school": "東勢高工", "dept": "家設科", "entry": "1 (跨區)", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立東勢高工"}, {"class": 302, "seat": 23, "name": "劉芸岑", "school": "明德高中", "dept": "多媒體設計", "entry": "1 (跨區)", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立明德高中"}, {"class": 302, "seat": 24, "name": "潘芓妘", "school": "文華高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立文華高中"}, {"class": 302, "seat": 25, "name": "趙鴻沁", "school": "玉山高中", "dept": "餐飲科", "entry": "1", "cluster": "餐旅群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立玉山高中"}, {"class": 303, "seat": 1, "name": "王奕中", "school": "興大附農", "dept": "森林科(產特)", "entry": "1", "cluster": "農業群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立興大附農"}, {"class": 303, "seat": 2, "name": "林正哲", "school": "嘉陽高中", "dept": "餐飲管理科", "entry": "13", "cluster": "餐旅群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立嘉陽高中"}, {"class": 303, "seat": 3, "name": "林茂榮", "school": "新民高中", "dept": "商業經營科", "entry": "1", "cluster": "商業與管理群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 303, "seat": 4, "name": "林晟翔", "school": "慈明高中", "dept": "餐飲管理科", "entry": "7", "cluster": "餐旅群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立慈明高中"}, {"class": 303, "seat": 5, "name": "洪御恩", "school": "致用高中", "dept": "餐飲管理科", "entry": "1", "cluster": "餐旅群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立致用高中"}, {"class": 303, "seat": 6, "name": "張冠儒", "school": "新民高中", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 303, "seat": 7, "name": "張哲誠", "school": "大甲高工", "dept": "建築科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立大甲高工"}, {"class": 303, "seat": 8, "name": "陳柏翰", "school": "臺中二中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中二中"}, {"class": 303, "seat": 9, "name": "黄柏菖", "school": "嶺東高中", "dept": "電子科", "entry": "11", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立嶺東高中"}, {"class": 303, "seat": 10, "name": "葉威辰", "school": "神岡高工", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 303, "seat": 11, "name": "蔡政霖", "school": "興大附農", "dept": "觀光事業科", "entry": "1", "cluster": "餐旅群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立興大附農"}, {"class": 303, "seat": 12, "name": "鄭嘉恩", "school": "清水高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立清水高中"}, {"class": 303, "seat": 13, "name": "吳芮瑜", "school": "豐原高商", "dept": "國際貿易科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 303, "seat": 14, "name": "枋姵妤", "school": "文華高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立文華高中"}, {"class": 303, "seat": 15, "name": "邱羿瑄", "school": "惠文高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立惠文高中"}, {"class": 303, "seat": 16, "name": "張米茜", "school": "臺中科技大學", "dept": "護理科", "entry": "3", "cluster": "醫護群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "國立臺中科技大學"}, {"class": 303, "seat": 17, "name": "張娠熏", "school": "新民高中", "dept": "表演藝術科", "entry": "9", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 303, "seat": 18, "name": "張珮紓", "school": "沙鹿高工", "dept": "紡織科(產特)", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 303, "seat": 19, "name": "陳依姍", "school": "新民高中", "dept": "室內設計科", "entry": "1", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 303, "seat": 20, "name": "陳亭尹", "school": "大明高中", "dept": "美工科", "entry": "9", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立大明高中"}, {"class": 303, "seat": 21, "name": "蕭芯妤", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 303, "seat": 22, "name": "魏翊妃", "school": "慈明高中", "dept": "餐飲管理科", "entry": "7", "cluster": "餐旅群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立慈明高中"}, {"class": 303, "seat": 23, "name": "魏睿箴", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 303, "seat": 24, "name": "羅依岑", "school": "仁德醫專", "dept": "護理科", "entry": "3", "cluster": "醫護群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立仁德醫專"}, {"class": 303, "seat": 25, "name": "洪紫媛", "school": "仁德醫專", "dept": "護理科", "entry": "3", "cluster": "醫護群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立仁德醫專"}, {"class": 304, "seat": 1, "name": "王宥鑫", "school": "臺中高工", "dept": "冷凍空調科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 304, "seat": 2, "name": "李佐鋐", "school": "大甲高工", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立大甲高工"}, {"class": 304, "seat": 3, "name": "施胤皓", "school": "神岡高工", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 304, "seat": 4, "name": "洪煒峻", "school": "臺中高工", "dept": "機械科", "entry": "12", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 304, "seat": 5, "name": "紀秉昂", "school": "致用高中", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立致用高中"}, {"class": 304, "seat": 6, "name": "張博睿", "school": "惠文高中", "dept": "", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立惠文高中"}, {"class": 304, "seat": 7, "name": "許品耀", "school": "嶺東高中", "dept": "", "entry": "13", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立嶺東高中"}, {"class": 304, "seat": 8, "name": "許哲崴", "school": "僑泰高中", "dept": "餐飲科", "entry": "13", "cluster": "餐旅群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 304, "seat": 9, "name": "連紹穎", "school": "后綜高中", "dept": "", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 304, "seat": 10, "name": "陳咨翰", "school": "新民高中", "dept": "日文系", "entry": "1", "cluster": "外語群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 304, "seat": 11, "name": "湯益安", "school": "大甲高工", "dept": "建築科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立大甲高工"}, {"class": 304, "seat": 12, "name": "賴緯駿", "school": "豐原高中", "dept": "", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 304, "seat": 13, "name": "吳亦淇", "school": "西苑高中", "dept": "", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 304, "seat": 14, "name": "林佳樂", "school": "豐原高商", "dept": "商業經營科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 304, "seat": 15, "name": "林昀臻", "school": "未升學未就業", "dept": "自學", "entry": "17", "cluster": "不升學", "gender": "F", "is_night": false, "school_type": "不升學", "full_school": "未升學未就業"}, {"class": 304, "seat": 16, "name": "張紜瑜", "school": "臺中女中", "dept": "", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中女中"}, {"class": 304, "seat": 17, "name": "連莛宜", "school": "豐原高商", "dept": "國貿科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 304, "seat": 18, "name": "陳季襄", "school": "神岡高工", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 304, "seat": 19, "name": "陳宥芯", "school": "清水高中", "dept": "", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立清水高中"}, {"class": 304, "seat": 20, "name": "陳湘妮", "school": "豐原高商", "dept": "國貿科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 304, "seat": 21, "name": "黃郁真", "school": "東勢高工", "dept": "電子科", "entry": "1", "cluster": "電機與電子群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立東勢高工"}, {"class": 304, "seat": 22, "name": "劉亮妡", "school": "臺中女中", "dept": "", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中女中"}, {"class": 304, "seat": 23, "name": "潘芷妍", "school": "致用高中", "dept": "餐飲科", "entry": "1", "cluster": "餐旅群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立致用高中"}, {"class": 304, "seat": 24, "name": "蔡紫婕", "school": "僑泰高中", "dept": "觀光科", "entry": "1", "cluster": "餐旅群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 304, "seat": 25, "name": "羅可茵", "school": "新民高中", "dept": "", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 305, "seat": 1, "name": "江鎧伯", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 305, "seat": 2, "name": "吳秉昇", "school": "沙鹿高工", "dept": "汽修科", "entry": "2", "cluster": "動力機械群", "gender": "M", "is_night": true, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 305, "seat": 3, "name": "巫秉睿", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 305, "seat": 4, "name": "卓駿睿", "school": "沙鹿高工", "dept": "電子科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 305, "seat": 5, "name": "張宏澤", "school": "東勢高工", "dept": "資訊科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立東勢高工"}, {"class": 305, "seat": 6, "name": "張翊釩", "school": "沙鹿高工", "dept": "電子科", "entry": "13", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 305, "seat": 7, "name": "張詠瑞", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 305, "seat": 8, "name": "梁騰午", "school": "弘文高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立弘文高中"}, {"class": 305, "seat": 9, "name": "陳霆暄", "school": "僑泰高中", "dept": "電子科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 305, "seat": 10, "name": "蔡宗甫", "school": "臺中二中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中二中"}, {"class": 305, "seat": 11, "name": "謝玄律", "school": "臺中高工", "dept": "電機科", "entry": "2", "cluster": "電機與電子群", "gender": "M", "is_night": true, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 305, "seat": 12, "name": "鐘淇翔", "school": "沙鹿高工", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 305, "seat": 13, "name": "吳豫升", "school": "沙鹿高工", "dept": "汽修科", "entry": "2", "cluster": "動力機械群", "gender": "M", "is_night": true, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 305, "seat": 14, "name": "邱韻綺", "school": "中港高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立中港高中"}, {"class": 305, "seat": 15, "name": "張冬侑", "school": "臺中家商", "dept": "會計", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中家商"}, {"class": 305, "seat": 16, "name": "張翊嵐", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 305, "seat": 17, "name": "張雅筑", "school": "新民高中", "dept": "觀光", "entry": "1", "cluster": "餐旅群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 305, "seat": 18, "name": "陳雨婕", "school": "新民高中", "dept": "應英", "entry": "1", "cluster": "外語群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 305, "seat": 19, "name": "曾筱芸", "school": "僑泰高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 305, "seat": 20, "name": "黃羽彤", "school": "慈明高中", "dept": "照顧服務", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立慈明高中"}, {"class": 305, "seat": 21, "name": "廖姵鈞", "school": "新民高中", "dept": "應英", "entry": "1", "cluster": "外語群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 305, "seat": 22, "name": "潘妍安", "school": "臺中家商", "dept": "應英", "entry": "1", "cluster": "外語群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中家商"}, {"class": 305, "seat": 23, "name": "鄭宇岑", "school": "臺中二中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中二中"}, {"class": 305, "seat": 24, "name": "周郁淇", "school": "明道高中", "dept": "電子科", "entry": "1", "cluster": "電機與電子群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立明道高中"}, {"class": 306, "seat": 1, "name": "江韶睿", "school": "新民高中", "dept": "資料處理科", "entry": "1", "cluster": "商業與管理群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 306, "seat": 2, "name": "吳承諺", "school": "沙鹿高工", "dept": "綜合職能科", "entry": "12", "cluster": "特殊教育", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 306, "seat": 3, "name": "蔡承叡", "school": "臺中一中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中一中"}, {"class": 306, "seat": 4, "name": "枋鎣杰", "school": "沙鹿高工", "dept": "汽修科", "entry": "4", "cluster": "動力機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 306, "seat": 5, "name": "林毓湖", "school": "卓蘭高中", "dept": "幼保科", "entry": "1", "cluster": "家政群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "國立卓蘭高中"}, {"class": 306, "seat": 6, "name": "高品豐", "school": "神岡高工", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 306, "seat": 7, "name": "張恒維", "school": "神岡高工", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 306, "seat": 8, "name": "張晏銘", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 306, "seat": 9, "name": "張楷頡", "school": "神岡高工", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 306, "seat": 10, "name": "陳嵩博", "school": "清水高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立清水高中"}, {"class": 306, "seat": 11, "name": "傅奕翔", "school": "神岡高工", "dept": "機械科", "entry": "7", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 306, "seat": 12, "name": "黃亭瑋", "school": "東勢高工", "dept": "建築科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立東勢高工"}, {"class": 306, "seat": 13, "name": "楊睿哲", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 306, "seat": 14, "name": "廖竑端", "school": "大甲高工", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立大甲高工"}, {"class": 306, "seat": 15, "name": "劉思妤", "school": "沙鹿高工", "dept": "資料處理科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 306, "seat": 16, "name": "林苡彤", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 306, "seat": 17, "name": "林鈺涓", "school": "清水高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立清水高中"}, {"class": 306, "seat": 18, "name": "柳順順", "school": "台南護專", "dept": "護理", "entry": "3", "cluster": "醫護群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "國立台南護專"}, {"class": 306, "seat": 19, "name": "范侄臻", "school": "沙鹿高工", "dept": "化工科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 306, "seat": 20, "name": "張芮軒", "school": "臺中家商", "dept": "國際經營科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中家商"}, {"class": 306, "seat": 21, "name": "張家蓁", "school": "沙鹿高工", "dept": "綜合職能科", "entry": "12", "cluster": "特殊教育", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 306, "seat": 22, "name": "張晰晴", "school": "新民高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 306, "seat": 23, "name": "陳亞欣", "school": "新民高中", "dept": "商業經營科", "entry": "8", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 306, "seat": 24, "name": "黃洳喬", "school": "后綜高中", "dept": "普通", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 306, "seat": 25, "name": "李家同", "school": "神岡高工", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 306, "seat": 26, "name": "王駿淋", "school": "新民高中", "dept": "商業經營科", "entry": "1", "cluster": "商業與管理群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 307, "seat": 1, "name": "王國同", "school": "大甲高工", "dept": "建築科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立大甲高工"}, {"class": 307, "seat": 2, "name": "吳秉澄", "school": "臺中高工", "dept": "機械製圖科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 307, "seat": 3, "name": "吳秉霖", "school": "臺中一中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中一中"}, {"class": 307, "seat": 4, "name": "李劭", "school": "未升學未就業", "dept": "自學，在美國", "entry": "17", "cluster": "不升學", "gender": "M", "is_night": false, "school_type": "不升學", "full_school": "未升學未就業"}, {"class": 307, "seat": 5, "name": "卓越", "school": "神岡高工", "dept": "機械科", "entry": "7", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 307, "seat": 6, "name": "林宗毅", "school": "神岡高工", "dept": "機械科", "entry": "7", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 307, "seat": 7, "name": "邱琮淯", "school": "神岡高工", "dept": "機械科", "entry": "", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 307, "seat": 8, "name": "張豐吉", "school": "豐原高商", "dept": "綜合職能", "entry": "12", "cluster": "特殊教育", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 307, "seat": 9, "name": "陳帥江", "school": "沙鹿高工", "dept": "資訊科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 307, "seat": 10, "name": "傅士瑞", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 307, "seat": 11, "name": "黃祈瑞", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 307, "seat": 12, "name": "黃偉宸", "school": "大甲高工", "dept": "機械科", "entry": "7", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立大甲高工"}, {"class": 307, "seat": 13, "name": "黃國哲", "school": "臺中二中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中二中"}, {"class": 307, "seat": 14, "name": "蘇亞各", "school": "臺中高工", "dept": "建築科(夜間)", "entry": "2", "cluster": "普通科", "gender": "M", "is_night": true, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 307, "seat": 15, "name": "林庭聿", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 307, "seat": 16, "name": "施宥妃", "school": "豐原高商", "dept": "綜合職能", "entry": "12", "cluster": "特殊教育", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 307, "seat": 17, "name": "洪心舲", "school": "臺中家商", "dept": "資料處理科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中家商"}, {"class": 307, "seat": 18, "name": "張芝娸", "school": "豐原高商", "dept": "資料處理科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 307, "seat": 19, "name": "林羽喬", "school": "明德高中", "dept": "幼保科", "entry": "1", "cluster": "家政群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立明德高中"}, {"class": 307, "seat": 20, "name": "陳姿瑜", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 307, "seat": 21, "name": "陳宣函", "school": "新民高中", "dept": "觀光科", "entry": "13", "cluster": "餐旅群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 307, "seat": 22, "name": "楊苡暄", "school": "嶺東高中", "dept": "觀光科", "entry": "1", "cluster": "餐旅群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立嶺東高中"}, {"class": 307, "seat": 23, "name": "葉柔妤", "school": "弘文高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立弘文高中"}, {"class": 307, "seat": 24, "name": "蘇箐箑", "school": "曉明女中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立曉明女中"}, {"class": 307, "seat": 25, "name": "曾子昱", "school": "大甲高工", "dept": "機械科", "entry": "7", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立大甲高工"}, {"class": 308, "seat": 1, "name": "何昇達", "school": "神岡高工", "dept": "機械科 (產學班)", "entry": "7", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 308, "seat": 2, "name": "吳承恩", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 308, "seat": 3, "name": "呂世傑", "school": "僑泰高中", "dept": "觀光事業科", "entry": "1", "cluster": "餐旅群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 308, "seat": 4, "name": "吳裕傑", "school": "神岡高工", "dept": "機械科 (產學班)", "entry": "7", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 308, "seat": 5, "name": "金品宏", "school": "惠文高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立惠文高中"}, {"class": 308, "seat": 6, "name": "柯凱恩", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 308, "seat": 7, "name": "許旭成", "school": "宜寧高中", "dept": "電機科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立宜寧高中"}, {"class": 308, "seat": 8, "name": "許博皓", "school": "新民高中", "dept": "電機科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 308, "seat": 9, "name": "郭彥霆", "school": "臺中高工", "dept": "化工科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 308, "seat": 10, "name": "黃戚泰", "school": "新民高中", "dept": "資訊科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 308, "seat": 11, "name": "葉洛豪", "school": "豐原高商", "dept": "資料處理科", "entry": "1", "cluster": "商業與管理群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 308, "seat": 12, "name": "蔡昊澤", "school": "東勢高工", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立東勢高工"}, {"class": 308, "seat": 13, "name": "蔡易珉", "school": "文華高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立文華高中"}, {"class": 308, "seat": 14, "name": "謝政穎", "school": "文華高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立文華高中"}, {"class": 308, "seat": 15, "name": "王柏翰", "school": "慈明高中", "dept": "美容科 (建教合作)", "entry": "7", "cluster": "家政群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立慈明高中"}, {"class": 308, "seat": 16, "name": "王凱恩", "school": "屏北高中", "dept": "體育班", "entry": "10", "cluster": "體育專班", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "國立屏北高中"}, {"class": 308, "seat": 17, "name": "李晏瑜", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 308, "seat": 18, "name": "林築藝", "school": "青年高中", "dept": "美容科", "entry": "1", "cluster": "家政群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立青年高中"}, {"class": 308, "seat": 19, "name": "巫沛瑜", "school": "大明高中", "dept": "美工科", "entry": "1", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立大明高中"}, {"class": 308, "seat": 20, "name": "巫沛瑤", "school": "霧峰農工", "dept": "餐飲管理科", "entry": "1", "cluster": "餐旅群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立霧峰農工"}, {"class": 308, "seat": 21, "name": "張柔蓁", "school": "僑泰高中", "dept": "寵物經營科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 308, "seat": 22, "name": "許喬茵", "school": "文華高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立文華高中"}, {"class": 308, "seat": 23, "name": "陳妍衣", "school": "仁德醫專", "dept": "護理系", "entry": "1", "cluster": "醫護群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立仁德醫專"}, {"class": 308, "seat": 24, "name": "温芮婕", "school": "豐原高商", "dept": "國貿科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 308, "seat": 25, "name": "劉禹彤", "school": "大明高中", "dept": "美工科", "entry": "1", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立大明高中"}, {"class": 308, "seat": 26, "name": "劉璟蓉", "school": "臺中家商", "dept": "資料處理科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中家商"}, {"class": 309, "seat": 1, "name": "謝成佑", "school": "清水高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立清水高中"}, {"class": 309, "seat": 2, "name": "王裕綸", "school": "新民高中", "dept": "資訊科", "entry": "13", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 309, "seat": 3, "name": "白杰峻", "school": "虎尾科大", "dept": "資訊工程科", "entry": "3", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "國立虎尾科大"}, {"class": 309, "seat": 4, "name": "吳承軒", "school": "沙鹿高工", "dept": "健產教班", "entry": "7", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 309, "seat": 5, "name": "林衫駐", "school": "新民高中", "dept": "機械機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 309, "seat": 6, "name": "林修賢", "school": "沙鹿高工", "dept": "電子科(進修部)", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 309, "seat": 7, "name": "林敬凱", "school": "新民高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 309, "seat": 8, "name": "張育嘉", "school": "興大附農", "dept": "餐飲科", "entry": "1", "cluster": "餐旅群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立興大附農"}, {"class": 309, "seat": 9, "name": "張和洲", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 309, "seat": 10, "name": "張傑威", "school": "中正預校", "dept": "空軍", "entry": "14", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "國立中正預校"}, {"class": 309, "seat": 11, "name": "趙枻學", "school": "神岡高工", "dept": "機械機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 309, "seat": 12, "name": "劉橙幃", "school": "宜寧高中", "dept": "資料處理科", "entry": "1", "cluster": "商業與管理群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立宜寧高中"}, {"class": 309, "seat": 13, "name": "蕭園澄", "school": "宜寧高中", "dept": "觀光科", "entry": "7", "cluster": "餐旅群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立宜寧高中"}, {"class": 309, "seat": 14, "name": "蔣晴衣", "school": "文華高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立文華高中"}, {"class": 309, "seat": 15, "name": "王品云", "school": "仁德醫專", "dept": "復健科", "entry": "3", "cluster": "醫護群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立仁德醫專"}, {"class": 309, "seat": 16, "name": "周恩妡", "school": "中港高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立中港高中"}, {"class": 309, "seat": 17, "name": "林欣霓", "school": "沙鹿高工", "dept": "紡織科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 309, "seat": 18, "name": "邱旻嫻", "school": "豐原高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 309, "seat": 19, "name": "張旆綾", "school": "臺中家商", "dept": "會計科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中家商"}, {"class": 309, "seat": 20, "name": "張晰晨", "school": "大甲高中", "dept": "美工科", "entry": "6", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立大甲高中"}, {"class": 309, "seat": 21, "name": "張銥芸", "school": "大明高中", "dept": "美工科", "entry": "6", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立大明高中"}, {"class": 309, "seat": 22, "name": "游沛瑾", "school": "僑泰高中", "dept": "室內設計科", "entry": "1", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 309, "seat": 23, "name": "游湘庭", "school": "臺中高工", "dept": "化工科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 309, "seat": 24, "name": "黃慈憶", "school": "沙鹿高工", "dept": "資訊科", "entry": "4", "cluster": "電機與電子群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 309, "seat": 25, "name": "楊家美", "school": "大明高中", "dept": "美工科", "entry": "9", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立大明高中"}, {"class": 309, "seat": 26, "name": "戚惟安", "school": "自學", "dept": "自學", "entry": "16", "cluster": "不升學", "gender": "M", "is_night": false, "school_type": "不升學", "full_school": "自學"}, {"class": 309, "seat": 27, "name": "顏以媃", "school": "宜寧高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立宜寧高中"}, {"class": 310, "seat": 1, "name": "賴嘉祥", "school": "僑泰高中", "dept": "汽汽修科", "entry": "1", "cluster": "動力機械群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 310, "seat": 2, "name": "包秀宇", "school": "沙鹿高工", "dept": "電子科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 310, "seat": 3, "name": "林毅展", "school": "豐原高中", "dept": "普通科", "entry": "10", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 310, "seat": 4, "name": "邱韋綸", "school": "新民高中", "dept": "多媒體動畫設計", "entry": "13", "cluster": "設計群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 310, "seat": 5, "name": "徐莆善", "school": "沙鹿高工", "dept": "資訊科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 310, "seat": 6, "name": "張宣漢", "school": "青年高中", "dept": "音樂科", "entry": "9", "cluster": "藝術群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立青年高中"}, {"class": 310, "seat": 7, "name": "張程鈞", "school": "嘉陽高中", "dept": "餐飲科", "entry": "5", "cluster": "餐旅群", "gender": "M", "is_night": true, "school_type": "私立", "full_school": "私立嘉陽高中"}, {"class": 310, "seat": 8, "name": "陳柏均", "school": "豐原高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 310, "seat": 9, "name": "陳淳湟", "school": "青年高中", "dept": "餐飲科", "entry": "7", "cluster": "餐旅群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立青年高中"}, {"class": 310, "seat": 10, "name": "曾承恩", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 310, "seat": 11, "name": "邱秉豐", "school": "致用高中", "dept": "水產", "entry": "1", "cluster": "食品群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立致用高中"}, {"class": 310, "seat": 12, "name": "劉威佑", "school": "沙鹿高工", "dept": "電機科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 310, "seat": 13, "name": "鄭秉棠", "school": "致用高中", "dept": "水產", "entry": "1", "cluster": "食品群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立致用高中"}, {"class": 310, "seat": 14, "name": "顏子堯", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 310, "seat": 15, "name": "王家玲", "school": "臺中家商", "dept": "幼保科", "entry": "1", "cluster": "家政群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中家商"}, {"class": 310, "seat": 16, "name": "沈思岑", "school": "新民高中", "dept": "商科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 310, "seat": 17, "name": "林鈺涵", "school": "忠明高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立忠明高中"}, {"class": 310, "seat": 18, "name": "袁芷葳", "school": "僑泰高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 310, "seat": 19, "name": "梁沛歆", "school": "中港高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立中港高中"}, {"class": 310, "seat": 20, "name": "陳楷蓁", "school": "臺中科技大學", "dept": "護理科", "entry": "3", "cluster": "醫護群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "國立臺中科技大學"}, {"class": 310, "seat": 21, "name": "黃馨儀", "school": "敏惠醫專", "dept": "牙技科", "entry": "3", "cluster": "醫護群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立敏惠醫專"}, {"class": 310, "seat": 22, "name": "廖家愉", "school": "新社高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立新社高中"}, {"class": 310, "seat": 23, "name": "歐彥榛", "school": "大明高中", "dept": "廣告設計科", "entry": "1", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立大明高中"}, {"class": 310, "seat": 24, "name": "歐瑞恩", "school": "沙鹿高工", "dept": "電機科", "entry": "1", "cluster": "電機與電子群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 310, "seat": 25, "name": "謝暐柃", "school": "僑泰高中", "dept": "美容科", "entry": "2", "cluster": "家政群", "gender": "F", "is_night": true, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 310, "seat": 26, "name": "邱柏瑋", "school": "東勢高工", "dept": "汽車科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立東勢高工"}, {"class": 311, "seat": 1, "name": "江明謚", "school": "豐原高商", "dept": "商業經營科", "entry": "1", "cluster": "商業與管理群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 311, "seat": 2, "name": "何宥承", "school": "新民高中", "dept": "觀光科", "entry": "1", "cluster": "餐旅群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 311, "seat": 3, "name": "李祐宇", "school": "東大附中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立東大附中"}, {"class": 311, "seat": 4, "name": "林定原", "school": "臺中高工", "dept": "資訊科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 311, "seat": 5, "name": "林宥駿", "school": "沙鹿高工", "dept": "電子科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 311, "seat": 6, "name": "張哲維", "school": "豐原高商", "dept": "資料處理科", "entry": "1", "cluster": "商業與管理群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 311, "seat": 7, "name": "陳士詠", "school": "豐原高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 311, "seat": 8, "name": "陳尚祺", "school": "臺中一中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中一中"}, {"class": 311, "seat": 9, "name": "陳浚弘", "school": "仁德醫專", "dept": "護理系", "entry": "3", "cluster": "醫護群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立仁德醫專"}, {"class": 311, "seat": 10, "name": "曾子軒", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 311, "seat": 11, "name": "黃道存", "school": "神岡高工", "dept": "機械科", "entry": "1", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立神岡高工"}, {"class": 311, "seat": 12, "name": "楊聖安", "school": "未升學未就業", "dept": "自學", "entry": "17", "cluster": "不升學", "gender": "M", "is_night": false, "school_type": "不升學", "full_school": "未升學未就業"}, {"class": 311, "seat": 13, "name": "劉哲泓", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 311, "seat": 14, "name": "蕭未家", "school": "豐原高商", "dept": "商業經營科", "entry": "1", "cluster": "商業與管理群", "gender": "M", "is_night": true, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 311, "seat": 15, "name": "江品萱", "school": "大甲高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立大甲高中"}, {"class": 311, "seat": 16, "name": "江馨瑩", "school": "大明高中", "dept": "美工科", "entry": "12", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立大明高中"}, {"class": 311, "seat": 17, "name": "吳宛倰", "school": "豐原高商", "dept": "應用外語科", "entry": "1", "cluster": "外語群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 311, "seat": 18, "name": "黃子佳", "school": "東大附中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立東大附中"}, {"class": 311, "seat": 19, "name": "周禹彤", "school": "嘉義高工", "dept": "實用技能班", "entry": "4", "cluster": "電機與電子群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "國立嘉義高工"}, {"class": 311, "seat": 20, "name": "林芳妤", "school": "大明高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立大明高中"}, {"class": 311, "seat": 21, "name": "柯昀恩", "school": "興大附農", "dept": "園藝科", "entry": "1", "cluster": "農業群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立興大附農"}, {"class": 311, "seat": 22, "name": "張苡薰", "school": "明德高中", "dept": "幼兒保育科", "entry": "1", "cluster": "家政群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立明德高中"}, {"class": 311, "seat": 23, "name": "許立昀", "school": "臺中女中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中女中"}, {"class": 311, "seat": 24, "name": "郭盈萱", "school": "弘文高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立弘文高中"}, {"class": 311, "seat": 25, "name": "陳穎熙", "school": "明台高中", "dept": "餐飲技術科", "entry": "13", "cluster": "餐旅群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立明台高中"}, {"class": 311, "seat": 26, "name": "温槿妙", "school": "沙鹿高工", "dept": "化工科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 312, "seat": 1, "name": "王彥洺", "school": "臺中一中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中一中"}, {"class": 312, "seat": 2, "name": "石豐睿", "school": "衛道高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立衛道高中"}, {"class": 312, "seat": 3, "name": "沈宥里", "school": "興大附中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "國立興大附中"}, {"class": 312, "seat": 4, "name": "周聖翔", "school": "臺中一中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中一中"}, {"class": 312, "seat": 5, "name": "張景程", "school": "立人高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "立人高中"}, {"class": 312, "seat": 6, "name": "許愷恩", "school": "豐原高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 312, "seat": 7, "name": "陳拓宇", "school": "臺中一中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中一中"}, {"class": 312, "seat": 8, "name": "陳柏逢", "school": "臺中高工", "dept": "土木科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 312, "seat": 9, "name": "陳靖崴", "school": "僑泰高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 312, "seat": 10, "name": "湯承翰", "school": "豐原高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 312, "seat": 11, "name": "黃永喬", "school": "嶺東高中", "dept": "電機科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立嶺東高中"}, {"class": 312, "seat": 12, "name": "黃禹澄", "school": "大明高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立大明高中"}, {"class": 312, "seat": 13, "name": "黃崇育", "school": "仁德醫專", "dept": "醫檢科", "entry": "3", "cluster": "醫護群", "gender": "M", "is_night": false, "school_type": "私立", "full_school": "私立仁德醫專"}, {"class": 312, "seat": 14, "name": "葉孟程", "school": "惠文高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立惠文高中"}, {"class": 312, "seat": 15, "name": "詹秉翰", "school": "沙鹿高工", "dept": "汽車科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立沙鹿高工"}, {"class": 312, "seat": 16, "name": "廖威勳", "school": "臺中高工", "dept": "資訊科", "entry": "1", "cluster": "電機與電子群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 312, "seat": 17, "name": "廖博煊", "school": "東山高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立東山高中"}, {"class": 312, "seat": 18, "name": "劉皓崴", "school": "臺中二中", "dept": "普通科", "entry": "10", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中二中"}, {"class": 312, "seat": 19, "name": "蔡炫旻", "school": "臺中高工", "dept": "機械科", "entry": "4", "cluster": "機械群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中高工"}, {"class": 312, "seat": 20, "name": "蔡翼安", "school": "豐原高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 312, "seat": 21, "name": "蕭博樂", "school": "臺中二中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中二中"}, {"class": 312, "seat": 22, "name": "周冠呈", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 312, "seat": 23, "name": "林怡瑄", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 312, "seat": 24, "name": "江湘婷", "school": "臺中女中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中女中"}, {"class": 312, "seat": 25, "name": "林家瑀", "school": "豐原高商", "dept": "資料處理科", "entry": "1", "cluster": "商業與管理群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 312, "seat": 26, "name": "張佩恩", "school": "豐原高中", "dept": "普通科", "entry": "10", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}, {"class": 312, "seat": 27, "name": "黃郁茹", "school": "僑泰高中", "dept": "美容科", "entry": "4", "cluster": "家政群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立僑泰高中"}, {"class": 312, "seat": 28, "name": "蔡沂軒", "school": "龍津高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立龍津高中"}, {"class": 313, "seat": 1, "name": "王顥元", "school": "興大附中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "國立興大附中"}, {"class": 313, "seat": 2, "name": "吳耕豪", "school": "清水高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立清水高中"}, {"class": 313, "seat": 3, "name": "李振維", "school": "臺南藝術大學", "dept": "中國音樂學系", "entry": "9", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "國立臺南藝術大學"}, {"class": 313, "seat": 4, "name": "李翊愷", "school": "臺中一中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中一中"}, {"class": 313, "seat": 5, "name": "黃浚家", "school": "清水高中", "dept": "音樂班", "entry": "9", "cluster": "藝術群", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立清水高中"}, {"class": 313, "seat": 6, "name": "徐茂翔", "school": "臺中一中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中一中"}, {"class": 313, "seat": 7, "name": "翁子淵", "school": "臺中二中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中二中"}, {"class": 313, "seat": 8, "name": "鐘品涵", "school": "臺中女中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "M", "is_night": false, "school_type": "公立", "full_school": "市立臺中女中"}, {"class": 313, "seat": 9, "name": "王蕾", "school": "文華高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立文華高中"}, {"class": 313, "seat": 10, "name": "王藝鈁", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 313, "seat": 11, "name": "白妤靜", "school": "豐原高商", "dept": "應用英語科", "entry": "1", "cluster": "外語群", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高商"}, {"class": 313, "seat": 12, "name": "林若晴", "school": "明道高中", "dept": "廣告設計科", "entry": "1", "cluster": "設計群", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立明道高中"}, {"class": 313, "seat": 13, "name": "林緗芮", "school": "惠文高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立惠文高中"}, {"class": 313, "seat": 14, "name": "邱御瑄", "school": "曉明女中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立曉明女中"}, {"class": 313, "seat": 15, "name": "柯俞安", "school": "清水高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立清水高中"}, {"class": 313, "seat": 16, "name": "洪湘晴", "school": "惠文高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立惠文高中"}, {"class": 313, "seat": 17, "name": "翁嘉翎", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 313, "seat": 18, "name": "張恩瑄", "school": "西苑高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立西苑高中"}, {"class": 313, "seat": 19, "name": "張菀芝", "school": "臺中二中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中二中"}, {"class": 313, "seat": 20, "name": "郭玟妤", "school": "后綜高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立后綜高中"}, {"class": 313, "seat": 21, "name": "陳芊孚", "school": "新民高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立新民高中"}, {"class": 313, "seat": 22, "name": "陳品捷", "school": "弘文高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "私立", "full_school": "私立弘文高中"}, {"class": 313, "seat": 23, "name": "陳雋月", "school": "文華高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立文華高中"}, {"class": 313, "seat": 24, "name": "趙敏忻", "school": "臺中二中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中二中"}, {"class": 313, "seat": 25, "name": "蔡尚芸", "school": "臺中女中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中女中"}, {"class": 313, "seat": 26, "name": "藺俞恩", "school": "臺中女中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立臺中女中"}, {"class": 313, "seat": 27, "name": "卓彥彤", "school": "豐原高中", "dept": "普通科", "entry": "1", "cluster": "普通科", "gender": "F", "is_night": false, "school_type": "公立", "full_school": "市立豐原高中"}];
+
+        // Initialize variables
+        let filteredData = [...graduatesData];
+        let currentPage = 1;
+        const rowsPerPage = 15;
+        let selectedClass = 'all';
+        let searchQuery = '';
+
+        // Generate Class Filter Buttons
+        const classFilter = document.getElementById('classFilter');
+        for (let i = 1; i <= 13; i++) {
+            const cNum = 300 + i;
+            const btn = document.createElement('button');
+            btn.className = 'filter-btn';
+            btn.textContent = cNum;
+            btn.dataset.class = cNum;
+            classFilter.appendChild(btn);
+        }
+
+        // Class Filter Click Event
+        classFilter.addEventListener('click', (e) => {
+            if (e.target.classList.contains('filter-btn')) {
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                selectedClass = e.target.dataset.class;
+                currentPage = 1;
+                filterAndRender();
+            }
+        });
+
+        // Search Input Event
+        const searchBox = document.getElementById('searchBox');
+        searchBox.addEventListener('input', (e) => {
+            searchQuery = e.target.value.trim().toLowerCase();
+            currentPage = 1;
+            filterAndRender();
+        });
+
+        // Filter and Render Logic
+        function filterAndRender() {
+            filteredData = graduatesData.filter(student => {
+                const matchesClass = selectedClass === 'all' || student.class.toString() === selectedClass;
+                const matchesSearch = 
+                    student.name.toLowerCase().includes(searchQuery) ||
+                    student.school.toLowerCase().includes(searchQuery) ||
+                    student.dept.toLowerCase().includes(searchQuery) ||
+                    student.cluster.toLowerCase().includes(searchQuery);
+                return matchesClass && matchesSearch;
+            });
+
+            renderTable();
+        }
+
+        // Render Table Data
+        function renderTable() {
+            const tbody = document.getElementById('studentTableBody');
+            tbody.innerHTML = '';
+
+            const totalRows = filteredData.length;
+            const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+            
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const startIdx = (currentPage - 1) * rowsPerPage;
+            const endIdx = Math.min(startIdx + rowsPerPage, totalRows);
+
+            const pagedData = filteredData.slice(startIdx, endIdx);
+
+            if (pagedData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:2rem;">未找到符合篩選條件的學生資料</td></tr>`;
+            } else {
+                pagedData.forEach(student => {
+                    const tr = document.createElement('tr');
+                    
+                    const typeBadge = student.school_type === '公立' 
+                        ? `<span class="badge public">公立</span>`
+                        : student.school_type === '私立'
+                        ? `<span class="badge private">私立</span>`
+                        : `<span class="badge none">不升學</span>`;
+
+                    const nightBadge = student.school === '未升學未就業' || student.school === '自學'
+                        ? `<span class="badge none">無</span>`
+                        : student.is_night
+                        ? `<span class="badge night">夜間</span>`
+                        : `<span class="badge day">日間</span>`;
+
+                    tr.innerHTML = `
+                        <td>${student.class}</td>
+                        <td>${student.seat}</td>
+                        <td style="font-weight:600;">${student.name}</td>
+                        <td>${student.school}</td>
+                        <td>${student.dept || '<span style="color:var(--text-muted);">無</span>'}</td>
+                        <td>${typeBadge}</td>
+                        <td>${student.cluster}</td>
+                        <td>${nightBadge}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Update Pagination Info
+            document.getElementById('paginationInfo').textContent = 
+                totalRows === 0 
+                ? '無資料' 
+                : `顯示第 ${startIdx + 1} 到 ${endIdx} 筆，共 ${totalRows} 筆`;
+
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+
+        // Pagination Events
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        });
+
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+            }
+        });
+
+        // Render Table Initially
+        filterAndRender();
+
+        // -------------------------------------------------------------
+        // Charts Configuration
+        // -------------------------------------------------------------
+        Chart.defaults.color = '#9ca3af';
+        Chart.defaults.font.family = "'Inter', 'Noto Sans TC', sans-serif";
+
+        // Chart 1: Public vs Private
+        const ctxPub = document.getElementById('pubPrivChart').getContext('2d');
+        new Chart(ctxPub, {
+            type: 'doughnut',
+            data: {
+                labels: ['公立學校', '私立學校', '不升學'],
+                datasets: [{
+                    data: [225, 107, 4],
+                    backgroundColor: ['#10b981', '#3b82f6', '#ef4444'],
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 15 } }
+                }
+            }
+        });
+
+        // Chart 2: Day vs Night
+        const ctxDay = document.getElementById('dayNightChart').getContext('2d');
+        new Chart(ctxDay, {
+            type: 'doughnut',
+            data: {
+                labels: ['日間部', '進修部/夜間部', '不升學'],
+                datasets: [{
+                    data: [325, 7, 4],
+                    backgroundColor: ['#06b6d4', '#f59e0b', '#ef4444'],
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 15 } }
+                }
+            }
+        });
+
+        // Chart 3: Admission Channels
+        const ctxChan = document.getElementById('channelChart').getContext('2d');
+        new Chart(ctxChan, {
+            type: 'polarArea',
+            data: {
+                labels: ["高中免試(日)", "自行報名/續招", "體育班/運動績優", "十二年就學安置", "五專免試", "專業群科甄選", "實用技能學程", "高中免試(夜)", "產學/建教班", "技優甄審", "藝才班特招", "獨立招生"],
+                datasets: [{
+                    data: [255, 11, 5, 8, 10, 3, 6, 6, 13, 2, 6, 2],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.6)',
+                        'rgba(139, 92, 246, 0.6)',
+                        'rgba(16, 185, 129, 0.6)',
+                        'rgba(6, 182, 212, 0.6)',
+                        'rgba(245, 158, 11, 0.6)',
+                        'rgba(239, 68, 68, 0.6)',
+                        'rgba(236, 72, 153, 0.6)',
+                        'rgba(99, 102, 241, 0.6)',
+                        'rgba(20, 184, 166, 0.6)',
+                        'rgba(132, 204, 22, 0.6)',
+                        'rgba(244, 63, 94, 0.6)',
+                        'rgba(107, 114, 128, 0.6)'
+                    ],
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        angleLines: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // Chart 4: Top Schools (Headcount Top 12)
+        const ctxTop = document.getElementById('topSchoolsChart').getContext('2d');
+        new Chart(ctxTop, {
+            type: 'bar',
+            data: {
+                labels: ["私立新民高中", "市立沙鹿高工", "市立西苑高中", "市立后綜高中", "市立豐原高商", "市立臺中高工", "私立僑泰高中", "市立神岡高工", "市立豐原高中", "私立大明高中", "市立文華高中", "市立大甲高工"],
+                datasets: [{
+                    label: '學生人數',
+                    data: [30, 23, 19, 18, 16, 15, 15, 15, 14, 11, 10, 10],
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+                    y: { grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // Chart 5: Clusters Distribution
+        const ctxClus = document.getElementById('clusterChart').getContext('2d');
+        new Chart(ctxClus, {
+            type: 'bar',
+            data: {
+                labels: ["普通科", "電機電子", "機械群", "商管群", "餐旅群", "設計群", "特教", "醫護群", "家政群", "外語群", "化工群", "動機群", "土建群", "藝術群", "體育專班", "農業群", "食品群"],
+                datasets: [{
+                    label: '學生人數',
+                    data: [154, 39, 27, 26, 21, 20, 4, 11, 9, 8, 0, 5, 0, 2, 2, 2, 2],
+                    backgroundColor: 'rgba(139, 92, 246, 0.7)',
+                    borderColor: '#8b5cf6',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { color: 'rgba(255, 255, 255, 0.05)' } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
