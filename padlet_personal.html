@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Padlet Personal｜個人數位便條與生涯參訪靈感牆</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- 頂部導覽列 -->
+  <header class="bg-gradient-to-r from-rose-700 via-pink-600 to-amber-500 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center font-black text-xl shadow-inner">
+          📌
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-black tracking-tight">Padlet Personal 個人數位便條與靈感牆</h1>
+            <span class="text-xs px-2.5 py-0.5 rounded-full bg-white/20 text-white font-bold">獨立完整版</span>
+          </div>
+          <p class="text-xs text-rose-100">支援看板欄位 (Kanban) / 網格牆面 / 自由拖曳畫布 / 時間軸清單 / 多媒體附件與 JSON 備份</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <a href="index.html" class="text-xs bg-white/15 hover:bg-white/25 border border-white/30 text-white font-bold px-3 py-1.5 rounded-lg transition">
+          🔗 前往二年級生涯參訪選課系統 (index.html)
+        </a>
+        <button type="button" onclick="openPadletPostModal()" class="text-xs bg-white text-rose-700 hover:bg-rose-50 font-black px-3.5 py-1.5 rounded-lg shadow transition">
+          ＋ 新增便條卡片
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 通知訊息列 -->
+  <div id="toastBox" class="fixed bottom-5 right-5 z-50 hidden max-w-md bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 flex items-start gap-3">
+    <div id="toastIcon" class="mt-0.5 text-emerald-400 font-bold">●</div>
+    <div class="flex-1 text-sm" id="toastMsg"></div>
+    <button onclick="hideToast()" class="text-slate-400 hover:text-white text-xs">✕</button>
+  </div>
+
+  <!-- 主內容區 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+    <!-- 頂部：佈告欄選擇、版面切換與管理控制列 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 text-xs font-black">目前牆面</span>
+            <select id="padletBoardSelect" onchange="switchPadletBoard(this.value)"
+              class="px-3 py-1.5 rounded-xl border border-slate-300 bg-slate-50 font-black text-slate-900 text-sm sm:text-base outline-none focus:border-rose-500">
+            </select>
+            <button type="button" onclick="openPadletBoardModal()"
+              class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+              ⚙️ 佈告欄設定 / 新增牆面
+            </button>
+          </div>
+          <p id="padletBoardSubtitle" class="text-xs text-slate-500 mt-1"></p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="openPadletPostModal()"
+            class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-black text-xs sm:text-sm shadow-md flex items-center gap-1.5 transition">
+            <span class="text-base leading-none">＋</span>
+            <span>新增便條卡片</span>
+          </button>
+          <button type="button" onclick="exportPadletJSON()"
+            class="px-3 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition">
+            <span>⬇ 匯出 JSON</span>
+          </button>
+          <label class="px-3 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs cursor-pointer transition">
+            <span>⬆ 匯入 JSON</span>
+            <input type="file" accept=".json,application/json" onchange="importPadletJSON(event)" class="hidden">
+          </label>
+        </div>
+      </div>
+
+      <!-- 第二列：版面切換、背景主題、搜尋與顏色/標籤篩選 -->
+      <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold text-slate-500">版面檢視：</span>
+          <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+            <button type="button" id="padletLayoutBtn_shelf" onclick="setPadletLayout('shelf')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition">
+              📊 看板欄位 (Kanban)
+            </button>
+            <button type="button" id="padletLayoutBtn_grid" onclick="setPadletLayout('grid')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition">
+              🧱 網格牆面 (Grid)
+            </button>
+            <button type="button" id="padletLayoutBtn_canvas" onclick="setPadletLayout('canvas')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition">
+              🖐️ 自由拖曳畫布 (Canvas)
+            </button>
+            <button type="button" id="padletLayoutBtn_stream" onclick="setPadletLayout('stream')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition">
+              📜 時間軸清單 (Stream)
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5 ml-1">
+            <span class="text-xs font-bold text-slate-500">桌布：</span>
+            <select id="padletWallpaperSelect" onchange="setPadletWallpaper(this.value)"
+              class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700">
+              <option value="cork">🪵 經典軟木塞</option>
+              <option value="indigo">🌌 星空深藍</option>
+              <option value="meadow">🌿 清新薄荷綠</option>
+              <option value="sunset">🌅 暖陽玫瑰</option>
+              <option value="dots">⚪ 極簡點陣白</option>
+              <option value="dark">🖤 暗黑黑板</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 flex-1 sm:justify-end">
+          <div class="relative min-w-[200px] sm:w-64">
+            <input type="text" id="padletSearchInput" oninput="renderPadletView()"
+              placeholder="🔍 搜尋標題、內文、標籤或作者..."
+              class="w-full pl-3 pr-8 py-1.5 rounded-xl border border-slate-300 text-xs focus:border-rose-500 outline-none">
+            <button type="button" onclick="clearPadletFilters()" class="absolute right-2.5 top-1.5 text-slate-400 hover:text-slate-600 text-xs">✕</button>
+          </div>
+
+          <select id="padletColorFilter" onchange="renderPadletView()"
+            class="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700">
+            <option value="ALL">🎨 全部顏色</option>
+            <option value="amber">🟨 暖黃便利貼</option>
+            <option value="sky">🟦 天空藍</option>
+            <option value="rose">🟥 玫瑰粉</option>
+            <option value="emerald">🟩 翡翠綠</option>
+            <option value="violet">🟪 薰衣草紫</option>
+            <option value="white">⬜ 純白卡片</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+        <div id="padletTagFilterBar" class="flex flex-wrap items-center gap-1.5"></div>
+        <div id="padletStatsBadge" class="text-xs font-bold text-slate-500"></div>
+      </div>
+    </div>
+
+    <!-- 佈告欄主畫布容器 -->
+    <div id="padletMainWall" class="rounded-3xl p-4 sm:p-6 min-h-[660px] shadow-inner border border-slate-300/80 relative transition-all overflow-x-auto">
+      <div id="padletWallContent"></div>
+
+      <button type="button" onclick="openPadletPostModal()"
+        class="fixed bottom-8 right-8 z-30 w-14 h-14 rounded-full bg-gradient-to-tr from-rose-600 to-amber-500 hover:scale-105 text-white shadow-2xl flex items-center justify-center text-3xl font-black border-2 border-white transition"
+        title="點擊新增便條卡片（或在空白畫布雙擊新增）">
+        ＋
+      </button>
+    </div>
+  </main>
+
+  <!-- 新增 / 編輯 Padlet 便條卡片 Modal -->
+  <div id="padletPostModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 space-y-4 border border-slate-200 my-8">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 id="padletPostModalTitle" class="text-lg font-black text-slate-900">📌 新增便條卡片</h3>
+        <button type="button" onclick="closePadletPostModal()" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+
+      <input type="hidden" id="padletFormPostId" value="">
+
+      <div class="space-y-3.5 text-xs sm:text-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+          <div class="sm:col-span-8">
+            <label class="block text-xs font-bold text-slate-700 mb-1">卡片標題 *</label>
+            <input type="text" id="padletFormTitle" placeholder="輸入便條標題，例如：今日靈感、參訪心得、待辦事項..."
+              class="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-bold text-slate-900 focus:border-rose-500 outline-none">
+          </div>
+          <div class="sm:col-span-4">
+            <label class="block text-xs font-bold text-slate-700 mb-1">所屬分類欄位</label>
+            <select id="padletFormSection" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 font-bold text-slate-800"></select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">內文筆記</label>
+          <textarea id="padletFormContent" rows="4" placeholder="寫下詳細內容、心得筆記或步驟清單..."
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-800 focus:border-rose-500 outline-none leading-relaxed"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div class="sm:col-span-8">
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">🎨 卡片色彩主題</label>
+            <div class="flex flex-wrap items-center gap-2" id="padletColorPickerGroup">
+              <button type="button" onclick="selectPadletFormColor('amber')" data-color="amber" class="px-3 py-1.5 rounded-lg bg-amber-100 border-2 border-amber-400 text-amber-950 text-xs font-black">🟨 暖黃</button>
+              <button type="button" onclick="selectPadletFormColor('sky')" data-color="sky" class="px-3 py-1.5 rounded-lg bg-sky-100 border-2 border-transparent text-sky-950 text-xs font-bold">🟦 天藍</button>
+              <button type="button" onclick="selectPadletFormColor('rose')" data-color="rose" class="px-3 py-1.5 rounded-lg bg-rose-100 border-2 border-transparent text-rose-950 text-xs font-bold">🟥 玫瑰</button>
+              <button type="button" onclick="selectPadletFormColor('emerald')" data-color="emerald" class="px-3 py-1.5 rounded-lg bg-emerald-100 border-2 border-transparent text-emerald-950 text-xs font-bold">🟩 翡翠</button>
+              <button type="button" onclick="selectPadletFormColor('violet')" data-color="violet" class="px-3 py-1.5 rounded-lg bg-violet-100 border-2 border-transparent text-violet-950 text-xs font-bold">🟪 紫羅蘭</button>
+              <button type="button" onclick="selectPadletFormColor('white')" data-color="white" class="px-3 py-1.5 rounded-lg bg-white border-2 border-slate-300 text-slate-800 text-xs font-bold">⬜ 純白</button>
+            </div>
+            <input type="hidden" id="padletFormColor" value="amber">
+          </div>
+          <div class="sm:col-span-4 flex flex-col gap-1.5">
+            <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+              <input type="checkbox" id="padletFormPinned" class="rounded text-rose-600 w-4 h-4">
+              <span>📌 置頂此張卡片</span>
+            </label>
+            <input type="text" id="padletFormAuthor" placeholder="署名 (例：王小明)"
+              class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">🏷️ 標籤（以逗號或空白分隔）</label>
+          <input type="text" id="padletFormTags" placeholder="例如：生涯參訪, 實作體驗, 重要筆記"
+            class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700">
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <label class="text-xs font-bold text-slate-700">📎 附加圖片、外部連結或待辦清單（選填）</label>
+            <select id="padletFormAttachType" onchange="togglePadletAttachFields()"
+              class="px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-bold text-slate-800">
+              <option value="">無附件</option>
+              <option value="image">🖼️ 圖片網址 / 上傳本機照片</option>
+              <option value="link">🔗 外部網站 / 雲端檔案連結</option>
+              <option value="checklist">☑️ 互動勾選待辦清單</option>
+            </select>
+          </div>
+
+          <div id="padletAttachFieldBox" class="hidden space-y-2">
+            <div id="padletAttachImageUploadRow" class="hidden flex items-center gap-2">
+              <label class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer transition">
+                <span>📂 選擇本機照片自動壓縮載入</span>
+                <input type="file" accept="image/*" onchange="handlePadletImageFile(event)" class="hidden">
+              </label>
+              <span class="text-[11px] text-slate-500">或於下方直接貼上圖片網址：</span>
+            </div>
+            <input type="text" id="padletFormAttachUrl" placeholder="貼上網址或待辦項目（以 | 分隔）"
+              class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white">
+            <input type="text" id="padletFormAttachTitle" placeholder="附件顯示標題或圖片說明（選填）"
+              class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+        <button type="button" onclick="closePadletPostModal()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">取消</button>
+        <button type="button" onclick="savePadletPostFromModal()" class="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-black shadow">💾 儲存便條卡片</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 佈告欄設定 / 新增牆面 Modal -->
+  <div id="padletBoardModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-slate-200">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-black text-slate-900">⚙️ 佈告欄牆面設定與管理</h3>
+        <button type="button" onclick="closePadletBoardModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">佈告欄名稱</label>
+          <input type="text" id="padletBoardFormTitle" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-bold text-sm">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">副標題 / 用途說明</label>
+          <input type="text" id="padletBoardFormSubtitle" class="w-full px-3.5 py-2 rounded-xl border border-slate-300">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">看板分類欄位（以逗號分隔）</label>
+          <input type="text" id="padletBoardFormSections" placeholder="例如：💡 靈感與筆記, 📋 待辦與進行中, ✅ 已完成與歸檔"
+            class="w-full px-3.5 py-2 rounded-xl border border-slate-300 font-bold">
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
+        <div class="flex gap-1.5">
+          <button type="button" onclick="createNewPadletBoard()" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">
+            ＋ 另存為新佈告欄
+          </button>
+          <button type="button" onclick="resetDefaultPadletData()" class="px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold">
+            ↻ 恢復預設範例牆
+          </button>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" onclick="closePadletBoardModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">取消</button>
+          <button type="button" onclick="saveCurrentPadletBoardSettings()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">儲存當前牆面設定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function safeStorageGet(key) {
+      try { return window.localStorage ? localStorage.getItem(key) : null; } catch (e) { return null; }
+    }
+    function safeStorageSet(key, val) {
+      try { if (window.localStorage) localStorage.setItem(key, val); } catch (e) {}
+    }
+
+    let toastTimer = null;
+    function showToast(msg, type = 'success') {
+      const box = document.getElementById('toastBox');
+      const icon = document.getElementById('toastIcon');
+      const text = document.getElementById('toastMsg');
+      text.textContent = msg;
+      icon.className = type === 'error' ? 'mt-0.5 text-rose-400 font-bold' : 'mt-0.5 text-emerald-400 font-bold';
+      box.classList.remove('hidden');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(hideToast, 4500);
+    }
+    function hideToast() {
+      const box = document.getElementById('toastBox');
+      if (box) box.classList.add('hidden');
+    }
+
+    const state = { currentUser: { displayName: '個人筆記', role: 'admin' } };
+
+    const DEFAULT_PADLET_BOARDS = [
+      {
+        id: 'board_personal',
+        title: '📌 個人數位靈感與待辦便條牆 (Padlet Personal)',
+        subtitle: '自由新增便條卡片、待辦清單、網頁書籤、圖片附件與靈感筆記，支援看板欄位與自由畫布拖曳',
+        layout: 'shelf',
+        wallpaper: 'cork',
+        createdAt: '2026-11-24 08:00:00',
+        sections: ['💡 靈感與筆記', '📋 待辦與進行中', '🔖 常用資源連結', '✅ 已完成與歸檔']
+      },
+      {
+        id: 'board_career',
+        title: '🎓 115學年度 僑泰高中職業試探參訪成果與心得牆',
+        subtitle: '歡迎八年級同學與導師分享 15 門專業群科實作體驗照片、作品成果與生涯探索心得！',
+        layout: 'grid',
+        wallpaper: 'indigo',
+        createdAt: '2026-11-24 08:30:00',
+        sections: ['🤖 理工與資訊群科', '🎨 設計與文創群科', '🍰 餐旅與家政群科', '🌟 參訪心得與提問']
+      },
+      {
+        id: 'board_canvas',
+        title: '🗺️ 生涯規劃與專案腦力激盪自由畫布',
+        subtitle: '切至「自由拖曳畫布」模式，可隨意在無邊際桌面上拖拉排列便利貼卡片！',
+        layout: 'canvas',
+        wallpaper: 'meadow',
+        createdAt: '2026-11-24 09:00:00',
+        sections: ['🎯 核心目標', '🚀 行動方案', '📦 參考素材']
+      }
+    ];
+
+    const DEFAULT_PADLET_POSTS = [
+      {
+        id: 'post_101',
+        boardId: 'board_personal',
+        title: '✨ 歡迎使用個人版 Padlet 數位便條與靈感牆！',
+        content: '這是一面專屬於您的多功能數位佈告欄：\n• 支援 4 種檢視版面：看板分欄 (Kanban)、網格牆面 (Grid)、自由拖曳畫布 (Canvas)、時間軸清單 (Stream)\n• 支援 6 種繽紛卡片底色、標籤篩選、關鍵字即時搜尋\n• 支援圖片上傳預覽、外部連結書籤、待辦事項勾選、按讚與留言互動\n• 與 index.html 共用同一份本機快取並支援 JSON 匯出匯入！',
+        section: '💡 靈感與筆記',
+        color: 'amber',
+        tags: ['使用指南', '置頂公告', 'Padlet'],
+        attachmentType: 'checklist',
+        attachmentUrl: '體驗切換 4 種版面模式|新增一張自己的彩色便條卡片|在自由畫布模式拖曳排列卡片|點選匯出 JSON 備份',
+        attachmentTitle: '快速上手體驗清單',
+        x: 35,
+        y: 35,
+        pinned: true,
+        likes: 12,
+        author: '系統管理員',
+        authorRole: 'admin',
+        createdAt: '2026-11-24 09:00:00',
+        comments: [
+          { id: 'c1', author: '資料組長', text: '可以隨時切換自由畫布或看板模式，非常方便！', time: '2026-11-24 09:15' }
+        ]
+      },
+      {
+        id: 'post_102',
+        boardId: 'board_personal',
+        title: '📅 二年級生涯參訪行前準備檢核',
+        content: '參訪日期：116年1月6日（星期三）13:00-15:25\n參訪地點：僑泰高級中學（15個專業群科實作體驗）\n請確認各班選課名冊與領隊導師名單是否已彙整完畢。',
+        section: '📋 待辦與進行中',
+        color: 'sky',
+        tags: ['行政待辦', '生涯參訪'],
+        attachmentType: 'link',
+        attachmentUrl: 'https://www.ctas.tc.edu.tw/',
+        attachmentTitle: '🔗 僑泰高級中學官方網站',
+        x: 375,
+        y: 45,
+        pinned: false,
+        likes: 8,
+        author: '輔導室資料組',
+        authorRole: 'admin',
+        createdAt: '2026-11-24 10:20:00',
+        comments: []
+      },
+      {
+        id: 'post_103',
+        boardId: 'board_personal',
+        title: '🎨 視覺化思考與色彩分類小技巧',
+        content: '您可以將不同性質的筆記設定為不同顏色：\n• 暖黃色 (Amber)：重要靈感與提醒\n• 天空藍 (Sky)：工作計畫與行政事項\n• 玫瑰粉 (Rose)：緊急待辦或重點標記\n• 翡翠綠 (Emerald)：已完成或成果紀錄\n• 薰衣草紫 (Violet)：學習資源與讀書筆記',
+        section: '🔖 常用資源連結',
+        color: 'violet',
+        tags: ['筆記技巧', '色彩管理'],
+        attachmentType: '',
+        attachmentUrl: '',
+        attachmentTitle: '',
+        x: 710,
+        y: 55,
+        pinned: false,
+        likes: 6,
+        author: '個人筆記',
+        authorRole: 'teacher',
+        createdAt: '2026-11-24 11:05:00',
+        comments: []
+      },
+      {
+        id: 'post_104',
+        boardId: 'board_personal',
+        title: '✅ 已完成全校 16 班 446 人選課系統建置',
+        content: '已完成線上即時選課、導師勾選矩陣、A4光學畫卡讀卡單列印與拍照自動辨識匯入功能！',
+        section: '✅ 已完成與歸檔',
+        color: 'emerald',
+        tags: ['里程碑', '系統建置'],
+        attachmentType: '',
+        attachmentUrl: '',
+        attachmentTitle: '',
+        x: 380,
+        y: 340,
+        pinned: false,
+        likes: 15,
+        author: '資料組管理員',
+        authorRole: 'admin',
+        createdAt: '2026-11-24 13:30:00',
+        comments: []
+      }
+    ];
+
+    let padletState = {
+      boards: JSON.parse(JSON.stringify(DEFAULT_PADLET_BOARDS)),
+      posts: JSON.parse(JSON.stringify(DEFAULT_PADLET_POSTS)),
+      activeBoardId: 'board_personal',
+      activeTagFilter: 'ALL',
+      checkedItems: {},
+      draggingPostId: null,
+      dragOffsetX: 0,
+      dragOffsetY: 0,
+      newPostDefaultX: null,
+      newPostDefaultY: null,
+      initialized: false
+    };
+
+    function initPadletModule() {
+      if (padletState.initialized) return;
+      const saved = safeStorageGet('CAREER_VISIT_PADLET_V1');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.boards) && parsed.boards.length > 0 && Array.isArray(parsed.posts)) {
+            padletState.boards = parsed.boards;
+            padletState.posts = parsed.posts;
+            padletState.activeBoardId = parsed.activeBoardId || parsed.boards[0].id;
+            padletState.checkedItems = parsed.checkedItems || {};
+          }
+        } catch (e) {}
+      }
+      padletState.initialized = true;
+    }
+
+    function savePadletLocal() {
+      safeStorageSet('CAREER_VISIT_PADLET_V1', JSON.stringify({
+        boards: padletState.boards,
+        posts: padletState.posts,
+        activeBoardId: padletState.activeBoardId,
+        checkedItems: padletState.checkedItems
+      }));
+    }
+
+    function getActivePadletBoard() {
+      let b = padletState.boards.find(x => x.id === padletState.activeBoardId);
+      if (!b) {
+        b = padletState.boards[0] || DEFAULT_PADLET_BOARDS[0];
+        padletState.activeBoardId = b.id;
+      }
+      return b;
+    }
+
+    function switchPadletBoard(boardId) {
+      padletState.activeBoardId = boardId;
+      padletState.activeTagFilter = 'ALL';
+      savePadletLocal();
+      renderPadletView();
+    }
+
+    function setPadletLayout(layout) {
+      const board = getActivePadletBoard();
+      board.layout = layout;
+      savePadletLocal();
+      renderPadletView();
+    }
+
+    function setPadletWallpaper(wp) {
+      const board = getActivePadletBoard();
+      board.wallpaper = wp;
+      savePadletLocal();
+      renderPadletView();
+    }
+
+    function setPadletTagFilter(tag) {
+      padletState.activeTagFilter = tag;
+      renderPadletView();
+    }
+
+    function clearPadletFilters() {
+      document.getElementById('padletSearchInput').value = '';
+      document.getElementById('padletColorFilter').value = 'ALL';
+      padletState.activeTagFilter = 'ALL';
+      renderPadletView();
+    }
+
+    function getWallpaperContainerStyle(wallpaper) {
+      switch (wallpaper) {
+        case 'indigo':
+          return {
+            cls: 'bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white border-indigo-800',
+            style: 'background-image: radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px); background-size: 24px 24px;'
+          };
+        case 'meadow':
+          return {
+            cls: 'bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 text-slate-900 border-emerald-200',
+            style: 'background-image: radial-gradient(rgba(16,185,129,0.18) 1.5px, transparent 1.5px); background-size: 22px 22px;'
+          };
+        case 'sunset':
+          return {
+            cls: 'bg-gradient-to-br from-rose-50 via-orange-50 to-amber-100 text-slate-900 border-rose-200',
+            style: ''
+          };
+        case 'dots':
+          return {
+            cls: 'bg-slate-50 text-slate-900 border-slate-200',
+            style: 'background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px); background-size: 20px 20px;'
+          };
+        case 'dark':
+          return {
+            cls: 'bg-slate-900 text-slate-100 border-slate-700',
+            style: 'background-image: linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 28px 28px;'
+          };
+        case 'cork':
+        default:
+          return {
+            cls: 'bg-amber-100/80 text-slate-900 border-amber-300',
+            style: 'background-color: #d6a87c; background-image: radial-gradient(rgba(120,65,20,0.16) 1.5px, transparent 0), radial-gradient(rgba(255,255,255,0.18) 1.5px, transparent 0); background-size: 18px 18px; background-position: 0 0, 9px 9px;'
+          };
+      }
+    }
+
+    function getPostCardColorClasses(color) {
+      switch (color) {
+        case 'sky':
+          return { card: 'bg-sky-50 border-sky-200 text-slate-900', header: 'bg-sky-100/80 border-sky-200 text-sky-950', badge: 'bg-sky-200/80 text-sky-900' };
+        case 'rose':
+          return { card: 'bg-rose-50 border-rose-200 text-slate-900', header: 'bg-rose-100/80 border-rose-200 text-rose-950', badge: 'bg-rose-200/80 text-rose-900' };
+        case 'emerald':
+          return { card: 'bg-emerald-50 border-emerald-200 text-slate-900', header: 'bg-emerald-100/80 border-emerald-200 text-emerald-950', badge: 'bg-emerald-200/80 text-emerald-900' };
+        case 'violet':
+          return { card: 'bg-violet-50 border-violet-200 text-slate-900', header: 'bg-violet-100/80 border-violet-200 text-violet-950', badge: 'bg-violet-200/80 text-violet-900' };
+        case 'white':
+          return { card: 'bg-white border-slate-200 text-slate-900', header: 'bg-slate-50 border-slate-200 text-slate-900', badge: 'bg-slate-100 text-slate-700' };
+        case 'amber':
+        default:
+          return { card: 'bg-amber-50 border-amber-200 text-slate-900', header: 'bg-amber-100/80 border-amber-200 text-amber-950', badge: 'bg-amber-200/80 text-amber-900' };
+      }
+    }
+
+    function escapePadletHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderPadletPostCardHtml(post, isCanvas = false) {
+      const theme = getPostCardColorClasses(post.color);
+      const tagsHtml = (post.tags || []).map(t =>
+        `<button type="button" onclick="setPadletTagFilter('${escapePadletHtml(t)}')" class="px-2 py-0.5 rounded-full text-[11px] font-bold ${theme.badge} hover:opacity-80 transition">#${escapePadletHtml(t)}</button>`
+      ).join('');
+
+      let attachmentHtml = '';
+      if (post.attachmentType === 'image' && post.attachmentUrl) {
+        attachmentHtml = `
+          <div class="mt-2.5 rounded-xl overflow-hidden border border-black/10 bg-black/5">
+            <img src="${escapePadletHtml(post.attachmentUrl)}" alt="${escapePadletHtml(post.attachmentTitle || post.title)}" class="w-full max-h-56 object-cover">
+            ${post.attachmentTitle ? `<div class="px-2.5 py-1.5 text-[11px] font-bold text-slate-600 bg-white/80">${escapePadletHtml(post.attachmentTitle)}</div>` : ''}
+          </div>
+        `;
+      } else if (post.attachmentType === 'link' && post.attachmentUrl) {
+        attachmentHtml = `
+          <a href="${escapePadletHtml(post.attachmentUrl)}" target="_blank" rel="noopener noreferrer"
+            class="mt-2.5 p-2.5 rounded-xl bg-white/90 hover:bg-white border border-slate-200/90 flex items-center justify-between gap-2 text-xs font-bold text-blue-700 shadow-sm transition">
+            <span class="truncate">${escapePadletHtml(post.attachmentTitle || post.attachmentUrl)}</span>
+            <span class="text-slate-400">↗</span>
+          </a>
+        `;
+      } else if (post.attachmentType === 'checklist' && post.attachmentUrl) {
+        const items = String(post.attachmentUrl).split('|').map(x => x.trim()).filter(Boolean);
+        const listHtml = items.map((item, idx) => {
+          const key = `${post.id}_${idx}`;
+          const checked = !!padletState.checkedItems[key];
+          return `
+            <label class="flex items-start gap-2 text-xs cursor-pointer select-none py-0.5">
+              <input type="checkbox" ${checked ? 'checked' : ''} onchange="togglePadletChecklistItem('${post.id}', ${idx})" class="mt-0.5 rounded text-emerald-600">
+              <span class="${checked ? 'line-through text-slate-400' : 'text-slate-800 font-medium'}">${escapePadletHtml(item)}</span>
+            </label>
+          `;
+        }).join('');
+        attachmentHtml = `
+          <div class="mt-2.5 p-2.5 rounded-xl bg-white/85 border border-black/10 space-y-1">
+            ${post.attachmentTitle ? `<div class="text-[11px] font-black text-slate-700 mb-1">☑️ ${escapePadletHtml(post.attachmentTitle)}</div>` : ''}
+            ${listHtml}
+          </div>
+        `;
+      }
+
+      const comments = Array.isArray(post.comments) ? post.comments : [];
+      const commentsHtml = comments.map(c => `
+        <div class="text-[11px] bg-white/75 px-2.5 py-1.5 rounded-lg border border-black/5">
+          <span class="font-black text-slate-800">${escapePadletHtml(c.author || '訪客')}：</span>
+          <span class="text-slate-700">${escapePadletHtml(c.text)}</span>
+        </div>
+      `).join('');
+
+      const canvasStyle = isCanvas
+        ? `position:absolute; left:${Math.max(10, Number(post.x || 40))}px; top:${Math.max(10, Number(post.y || 40))}px; width:310px; z-index:${post.pinned ? 20 : 10};`
+        : '';
+
+      const dragHandleAttr = isCanvas
+        ? `onpointerdown="startPadletCanvasDrag(event, '${post.id}')" style="cursor:grab; touch-action:none;" title="按住此處可自由拖曳便條位置"`
+        : '';
+
+      return `
+        <article id="padletCard_${post.id}" style="${canvasStyle}"
+          class="rounded-2xl border-2 ${theme.card} shadow-md hover:shadow-xl transition flex flex-col justify-between overflow-hidden">
+          <div>
+            <div ${dragHandleAttr} class="px-3.5 py-2 border-b ${theme.header} flex items-center justify-between gap-2 select-none">
+              <div class="flex items-center gap-1.5 truncate">
+                ${isCanvas ? '<span class="text-xs opacity-60">⠿</span>' : ''}
+                ${post.pinned ? '<span class="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[10px] font-black">📌 置頂</span>' : ''}
+                <span class="text-[11px] font-bold opacity-75 truncate">${escapePadletHtml(post.section || '未分類')}</span>
+              </div>
+              <div class="flex items-center gap-1" onpointerdown="event.stopPropagation()">
+                <button type="button" onclick="togglePadletPin('${post.id}')" class="p-1 rounded hover:bg-black/10 text-xs" title="切換置頂">📌</button>
+                <button type="button" onclick="openPadletPostModal('${post.id}')" class="p-1 rounded hover:bg-black/10 text-xs" title="編輯卡片">✏️</button>
+                <button type="button" onclick="deletePadletPost('${post.id}')" class="p-1 rounded hover:bg-rose-200 text-rose-700 text-xs" title="刪除卡片">🗑️</button>
+              </div>
+            </div>
+            <div class="p-4">
+              <h4 class="font-black text-base text-slate-900 leading-snug mb-1.5">${escapePadletHtml(post.title)}</h4>
+              <div class="text-xs text-slate-700 whitespace-pre-line leading-relaxed">${escapePadletHtml(post.content)}</div>
+              ${attachmentHtml}
+              ${tagsHtml ? `<div class="flex flex-wrap gap-1 mt-3">${tagsHtml}</div>` : ''}
+            </div>
+          </div>
+          <div class="px-4 py-2.5 bg-black/[0.03] border-t border-black/5 space-y-2">
+            <div class="flex items-center justify-between text-[11px] text-slate-500">
+              <span class="font-bold text-slate-700">👤 ${escapePadletHtml(post.author || '匿名')}</span>
+              <button type="button" onclick="likePadletPost('${post.id}')"
+                class="px-2 py-0.5 rounded-full bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 font-black flex items-center gap-1 shadow-sm transition">
+                <span>❤️</span>
+                <span>${Number(post.likes || 0)}</span>
+              </button>
+            </div>
+            ${commentsHtml ? `<div class="space-y-1 pt-1">${commentsHtml}</div>` : ''}
+            <div class="flex items-center gap-1.5 pt-1">
+              <input type="text" id="padletCommentInput_${post.id}" placeholder="寫下留言回饋..."
+                onkeydown="if(event.key==='Enter'){event.preventDefault();addPadletComment('${post.id}');}"
+                class="flex-1 px-2.5 py-1 rounded-lg border border-black/15 bg-white/90 text-[11px] text-slate-800 outline-none focus:border-rose-500">
+              <button type="button" onclick="addPadletComment('${post.id}')"
+                class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold">
+                送出
+              </button>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderPadletView() {
+      initPadletModule();
+      const board = getActivePadletBoard();
+
+      const boardSel = document.getElementById('padletBoardSelect');
+      if (boardSel) {
+        boardSel.innerHTML = padletState.boards.map(b =>
+          `<option value="${b.id}" ${b.id === board.id ? 'selected' : ''}>${escapePadletHtml(b.title)}</option>`
+        ).join('');
+      }
+      document.getElementById('padletBoardSubtitle').textContent = board.subtitle || '';
+      document.getElementById('padletWallpaperSelect').value = board.wallpaper || 'cork';
+
+      ['shelf', 'grid', 'canvas', 'stream'].forEach(ly => {
+        const btn = document.getElementById('padletLayoutBtn_' + ly);
+        if (!btn) return;
+        btn.className = board.layout === ly
+          ? 'px-3 py-1.5 rounded-lg text-xs font-black bg-rose-600 text-white shadow-sm transition'
+          : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+      });
+
+      const boardPosts = padletState.posts.filter(p => p.boardId === board.id);
+      const tagCounts = {};
+      boardPosts.forEach(p => {
+        (p.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; });
+      });
+
+      const tagBar = document.getElementById('padletTagFilterBar');
+      const allTags = Object.keys(tagCounts);
+      tagBar.innerHTML = `
+        <span class="text-xs font-bold text-slate-500 mr-1">🏷️ 標籤篩選：</span>
+        <button type="button" onclick="setPadletTagFilter('ALL')"
+          class="px-2.5 py-0.5 rounded-full text-xs font-bold transition ${padletState.activeTagFilter === 'ALL' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+          全部 (${boardPosts.length})
+        </button>
+      ` + allTags.map(t => `
+        <button type="button" onclick="setPadletTagFilter('${escapePadletHtml(t)}')"
+          class="px-2.5 py-0.5 rounded-full text-xs font-bold transition ${padletState.activeTagFilter === t ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'}">
+          #${escapePadletHtml(t)} (${tagCounts[t]})
+        </button>
+      `).join('');
+
+      const q = (document.getElementById('padletSearchInput')?.value || '').trim().toLowerCase();
+      const colorFilter = document.getElementById('padletColorFilter')?.value || 'ALL';
+
+      const filteredPosts = boardPosts.filter(p => {
+        if (colorFilter !== 'ALL' && p.color !== colorFilter) return false;
+        if (padletState.activeTagFilter !== 'ALL' && !(p.tags || []).includes(padletState.activeTagFilter)) return false;
+        if (q) {
+          const hay = `${p.title} ${p.content} ${p.author} ${p.section} ${(p.tags || []).join(' ')}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      }).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+
+      document.getElementById('padletStatsBadge').textContent = `顯示 ${filteredPosts.length} / 共 ${boardPosts.length} 張便條卡片`;
+
+      const wall = document.getElementById('padletMainWall');
+      const wallContent = document.getElementById('padletWallContent');
+      const wpStyle = getWallpaperContainerStyle(board.wallpaper);
+      wall.className = `rounded-3xl p-4 sm:p-6 min-h-[660px] shadow-inner border-2 relative transition-all overflow-x-auto ${wpStyle.cls}`;
+      wall.setAttribute('style', wpStyle.style);
+
+      if (board.layout === 'shelf') {
+        const sections = Array.isArray(board.sections) && board.sections.length > 0
+          ? board.sections
+          : ['💡 靈感與筆記', '📋 待辦與進行中', '✅ 已完成與歸檔'];
+        const colsHtml = sections.map(sec => {
+          const secPosts = filteredPosts.filter(p => (p.section || sections[0]) === sec);
+          return `
+            <div class="w-80 shrink-0 bg-white/80 backdrop-blur-md rounded-2xl p-3.5 border border-white/60 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-200/80">
+                  <h4 class="font-black text-sm text-slate-900">${escapePadletHtml(sec)}</h4>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-900 text-white text-xs font-bold">${secPosts.length}</span>
+                </div>
+                <div class="space-y-3.5">
+                  ${secPosts.length > 0 ? secPosts.map(p => renderPadletPostCardHtml(p, false)).join('') : '<div class="text-center py-8 text-xs text-slate-400">尚無卡片</div>'}
+                </div>
+              </div>
+              <button type="button" onclick="openPadletPostModal(null, '${escapePadletHtml(sec)}')"
+                class="mt-3 w-full py-2 rounded-xl border-2 border-dashed border-slate-300 hover:border-rose-400 hover:bg-rose-50/50 text-slate-600 hover:text-rose-700 font-bold text-xs transition">
+                ＋ 在此欄位新增卡片
+              </button>
+            </div>
+          `;
+        }).join('');
+        wallContent.innerHTML = `<div class="flex items-start gap-4 pb-4">${colsHtml}</div>`;
+      } else if (board.layout === 'canvas') {
+        const cardsHtml = filteredPosts.map(p => renderPadletPostCardHtml(p, true)).join('');
+        wallContent.innerHTML = `
+          <div id="padletFreeCanvasArea" ondblclick="handlePadletCanvasDblClick(event)"
+            class="relative w-full min-w-[1050px] min-h-[760px] select-none">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/55 text-white text-xs font-bold backdrop-blur-sm mb-2">
+              <span>🖐️ 自由拖曳畫布模式：按住卡片頂部即可隨意拖拉排列位置，或在空白處「雙擊滑鼠」直接新增便條！</span>
+            </div>
+            ${cardsHtml}
+          </div>
+        `;
+      } else if (board.layout === 'stream') {
+        wallContent.innerHTML = `<div class="max-w-2xl mx-auto space-y-4">${filteredPosts.map(p => renderPadletPostCardHtml(p, false)).join('')}</div>`;
+      } else {
+        wallContent.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">${filteredPosts.map(p => renderPadletPostCardHtml(p, false)).join('')}</div>`;
+      }
+    }
+
+    function startPadletCanvasDrag(e, postId) {
+      const post = padletState.posts.find(p => p.id === postId);
+      const cardEl = document.getElementById('padletCard_' + postId);
+      const canvasEl = document.getElementById('padletFreeCanvasArea');
+      if (!post || !cardEl || !canvasEl) return;
+      padletState.draggingPostId = postId;
+      const cardRect = cardEl.getBoundingClientRect();
+      padletState.dragOffsetX = e.clientX - cardRect.left;
+      padletState.dragOffsetY = e.clientY - cardRect.top;
+      cardEl.style.zIndex = '50';
+      cardEl.style.cursor = 'grabbing';
+
+      const onMove = (ev) => {
+        if (!padletState.draggingPostId) return;
+        const canvasRect = canvasEl.getBoundingClientRect();
+        const nx = Math.max(10, Math.round(ev.clientX - canvasRect.left - padletState.dragOffsetX));
+        const ny = Math.max(40, Math.round(ev.clientY - canvasRect.top - padletState.dragOffsetY));
+        post.x = nx;
+        post.y = ny;
+        cardEl.style.left = nx + 'px';
+        cardEl.style.top = ny + 'px';
+      };
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        if (cardEl) {
+          cardEl.style.zIndex = post.pinned ? '20' : '10';
+          cardEl.style.cursor = 'grab';
+        }
+        padletState.draggingPostId = null;
+        savePadletLocal();
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    }
+
+    function handlePadletCanvasDblClick(e) {
+      if (e.target.closest('article')) return;
+      const canvasEl = document.getElementById('padletFreeCanvasArea');
+      if (!canvasEl) return;
+      const rect = canvasEl.getBoundingClientRect();
+      padletState.newPostDefaultX = Math.max(20, Math.round(e.clientX - rect.left - 140));
+      padletState.newPostDefaultY = Math.max(45, Math.round(e.clientY - rect.top - 30));
+      openPadletPostModal();
+    }
+
+    function togglePadletPin(postId) {
+      const post = padletState.posts.find(p => p.id === postId);
+      if (!post) return;
+      post.pinned = !post.pinned;
+      savePadletLocal();
+      renderPadletView();
+    }
+
+    function likePadletPost(postId) {
+      const post = padletState.posts.find(p => p.id === postId);
+      if (!post) return;
+      post.likes = Number(post.likes || 0) + 1;
+      savePadletLocal();
+      renderPadletView();
+    }
+
+    function togglePadletChecklistItem(postId, idx) {
+      const key = `${postId}_${idx}`;
+      padletState.checkedItems[key] = !padletState.checkedItems[key];
+      savePadletLocal();
+      renderPadletView();
+    }
+
+    function addPadletComment(postId) {
+      const input = document.getElementById('padletCommentInput_' + postId);
+      const text = (input ? input.value : '').trim();
+      if (!text) return;
+      const post = padletState.posts.find(p => p.id === postId);
+      if (!post) return;
+      if (!Array.isArray(post.comments)) post.comments = [];
+      post.comments.push({
+        id: 'cm_' + Date.now(),
+        author: '個人筆記',
+        text,
+        time: new Date().toLocaleString('zh-TW', { hour12: false })
+      });
+      savePadletLocal();
+      renderPadletView();
+    }
+
+    function deletePadletPost(postId) {
+      padletState.posts = padletState.posts.filter(p => p.id !== postId);
+      savePadletLocal();
+      renderPadletView();
+      showToast('已刪除該張便條卡片', 'success');
+    }
+
+    function selectPadletFormColor(color) {
+      document.getElementById('padletFormColor').value = color;
+      document.querySelectorAll('#padletColorPickerGroup button').forEach(btn => {
+        if (btn.getAttribute('data-color') === color) {
+          btn.classList.add('ring-2', 'ring-slate-900', 'font-black');
+        } else {
+          btn.classList.remove('ring-2', 'ring-slate-900', 'font-black');
+        }
+      });
+    }
+
+    function togglePadletAttachFields() {
+      const type = document.getElementById('padletFormAttachType').value;
+      const box = document.getElementById('padletAttachFieldBox');
+      const imgRow = document.getElementById('padletAttachImageUploadRow');
+      if (!type) {
+        box.classList.add('hidden');
+        return;
+      }
+      box.classList.remove('hidden');
+      imgRow.classList.toggle('hidden', type !== 'image');
+    }
+
+    function handlePadletImageFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxW = 720;
+          const scale = img.width > maxW ? (maxW / img.width) : 1;
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          document.getElementById('padletFormAttachUrl').value = canvas.toDataURL('image/jpeg', 0.82);
+          if (!document.getElementById('padletFormAttachTitle').value) {
+            document.getElementById('padletFormAttachTitle').value = file.name;
+          }
+          showToast('已載入並壓縮照片附件！', 'success');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openPadletPostModal(postId = null, defaultSection = null) {
+      const board = getActivePadletBoard();
+      const secSelect = document.getElementById('padletFormSection');
+      const sections = Array.isArray(board.sections) && board.sections.length > 0
+        ? board.sections
+        : ['💡 靈感與筆記', '📋 待辦與進行中', '✅ 已完成與歸檔'];
+      secSelect.innerHTML = sections.map(s => `<option value="${escapePadletHtml(s)}">${escapePadletHtml(s)}</option>`).join('');
+
+      if (postId) {
+        const post = padletState.posts.find(p => p.id === postId);
+        if (!post) return;
+        document.getElementById('padletPostModalTitle').textContent = '✏️ 編輯便條卡片';
+        document.getElementById('padletFormPostId').value = post.id;
+        document.getElementById('padletFormTitle').value = post.title || '';
+        document.getElementById('padletFormSection').value = post.section || sections[0];
+        document.getElementById('padletFormContent').value = post.content || '';
+        document.getElementById('padletFormPinned').checked = !!post.pinned;
+        document.getElementById('padletFormAuthor').value = post.author || '';
+        document.getElementById('padletFormTags').value = (post.tags || []).join(', ');
+        document.getElementById('padletFormAttachType').value = post.attachmentType || '';
+        document.getElementById('padletFormAttachUrl').value = post.attachmentUrl || '';
+        document.getElementById('padletFormAttachTitle').value = post.attachmentTitle || '';
+        selectPadletFormColor(post.color || 'amber');
+      } else {
+        document.getElementById('padletPostModalTitle').textContent = '📌 新增便條卡片';
+        document.getElementById('padletFormPostId').value = '';
+        document.getElementById('padletFormTitle').value = '';
+        document.getElementById('padletFormSection').value = defaultSection || sections[0];
+        document.getElementById('padletFormContent').value = '';
+        document.getElementById('padletFormPinned').checked = false;
+        document.getElementById('padletFormAuthor').value = '個人筆記';
+        document.getElementById('padletFormTags').value = '';
+        document.getElementById('padletFormAttachType').value = '';
+        document.getElementById('padletFormAttachUrl').value = '';
+        document.getElementById('padletFormAttachTitle').value = '';
+        selectPadletFormColor('amber');
+      }
+      togglePadletAttachFields();
+      const modal = document.getElementById('padletPostModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closePadletPostModal() {
+      const modal = document.getElementById('padletPostModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      padletState.newPostDefaultX = null;
+      padletState.newPostDefaultY = null;
+    }
+
+    function savePadletPostFromModal() {
+      const board = getActivePadletBoard();
+      const postId = document.getElementById('padletFormPostId').value.trim();
+      const title = document.getElementById('padletFormTitle').value.trim();
+      const section = document.getElementById('padletFormSection').value;
+      const content = document.getElementById('padletFormContent').value.trim();
+      const color = document.getElementById('padletFormColor').value || 'amber';
+      const pinned = document.getElementById('padletFormPinned').checked;
+      const author = document.getElementById('padletFormAuthor').value.trim() || '個人筆記';
+      const tags = document.getElementById('padletFormTags').value.split(/[,，\s#]+/).map(t => t.trim()).filter(Boolean);
+      const attachmentType = document.getElementById('padletFormAttachType').value;
+      const attachmentUrl = document.getElementById('padletFormAttachUrl').value.trim();
+      const attachmentTitle = document.getElementById('padletFormAttachTitle').value.trim();
+
+      if (!title) {
+        showToast('請輸入便條卡片標題！', 'error');
+        return;
+      }
+
+      if (postId) {
+        const post = padletState.posts.find(p => p.id === postId);
+        if (post) {
+          Object.assign(post, { title, section, content, color, pinned, author, tags, attachmentType, attachmentUrl, attachmentTitle });
+        }
+      } else {
+        const cnt = padletState.posts.filter(p => p.boardId === board.id).length;
+        padletState.posts.unshift({
+          id: 'post_' + Date.now(),
+          boardId: board.id,
+          title,
+          content,
+          section,
+          color,
+          tags,
+          attachmentType,
+          attachmentUrl,
+          attachmentTitle,
+          x: padletState.newPostDefaultX !== null ? padletState.newPostDefaultX : (40 + (cnt % 3) * 340),
+          y: padletState.newPostDefaultY !== null ? padletState.newPostDefaultY : (50 + Math.floor(cnt / 3) * 240),
+          pinned,
+          likes: 0,
+          author,
+          authorRole: 'admin',
+          createdAt: new Date().toLocaleString('zh-TW', { hour12: false }),
+          comments: []
+        });
+      }
+      savePadletLocal();
+      closePadletPostModal();
+      renderPadletView();
+      showToast(postId ? '已更新便條卡片！' : '已新增便條卡片！', 'success');
+    }
+
+    function openPadletBoardModal() {
+      const board = getActivePadletBoard();
+      document.getElementById('padletBoardFormTitle').value = board.title || '';
+      document.getElementById('padletBoardFormSubtitle').value = board.subtitle || '';
+      document.getElementById('padletBoardFormSections').value = (board.sections || []).join(', ');
+      const modal = document.getElementById('padletBoardModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closePadletBoardModal() {
+      const modal = document.getElementById('padletBoardModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveCurrentPadletBoardSettings() {
+      const board = getActivePadletBoard();
+      const title = document.getElementById('padletBoardFormTitle').value.trim();
+      const subtitle = document.getElementById('padletBoardFormSubtitle').value.trim();
+      const sections = document.getElementById('padletBoardFormSections').value.split(/[,，]+/).map(s => s.trim()).filter(Boolean);
+      if (!title) {
+        showToast('請輸入佈告欄名稱！', 'error');
+        return;
+      }
+      board.title = title;
+      board.subtitle = subtitle;
+      if (sections.length > 0) board.sections = sections;
+      savePadletLocal();
+      closePadletBoardModal();
+      renderPadletView();
+      showToast('已更新佈告欄牆面設定！', 'success');
+    }
+
+    function createNewPadletBoard() {
+      const title = document.getElementById('padletBoardFormTitle').value.trim() || '📌 我的新數位便條牆';
+      const subtitle = document.getElementById('padletBoardFormSubtitle').value.trim() || '自由新增卡片與分類筆記';
+      const sections = document.getElementById('padletBoardFormSections').value.split(/[,，]+/).map(s => s.trim()).filter(Boolean);
+      const newId = 'board_' + Date.now();
+      padletState.boards.push({
+        id: newId,
+        title,
+        subtitle,
+        layout: 'shelf',
+        wallpaper: 'cork',
+        createdAt: new Date().toLocaleString('zh-TW', { hour12: false }),
+        sections: sections.length > 0 ? sections : ['💡 靈感與筆記', '📋 待辦與進行中', '✅ 已完成與歸檔']
+      });
+      padletState.activeBoardId = newId;
+      savePadletLocal();
+      closePadletBoardModal();
+      renderPadletView();
+      showToast(`已建立新佈告欄：「${title}」！`, 'success');
+    }
+
+    function resetDefaultPadletData() {
+      padletState.boards = JSON.parse(JSON.stringify(DEFAULT_PADLET_BOARDS));
+      padletState.posts = JSON.parse(JSON.stringify(DEFAULT_PADLET_POSTS));
+      padletState.activeBoardId = 'board_personal';
+      padletState.checkedItems = {};
+      savePadletLocal();
+      closePadletBoardModal();
+      renderPadletView();
+      showToast('已恢復預設範例佈告欄與卡片！', 'success');
+    }
+
+    function exportPadletJSON() {
+      const dataStr = JSON.stringify({
+        exportedAt: new Date().toISOString(),
+        boards: padletState.boards,
+        posts: padletState.posts,
+        checkedItems: padletState.checkedItems
+      }, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `padlet_personal_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('已匯出 Padlet JSON 備份檔！', 'success');
+    }
+
+    function importPadletJSON(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (Array.isArray(parsed.boards) && Array.isArray(parsed.posts)) {
+            padletState.boards = parsed.boards;
+            padletState.posts = parsed.posts;
+            padletState.activeBoardId = parsed.boards[0]?.id || 'board_personal';
+            if (parsed.checkedItems) padletState.checkedItems = parsed.checkedItems;
+            savePadletLocal();
+            renderPadletView();
+            showToast(`已成功匯入 ${parsed.boards.length} 個佈告欄與 ${parsed.posts.length} 張便條卡片！`, 'success');
+          } else {
+            showToast('JSON 格式不符！', 'error');
+          }
+        } catch (err) {
+          showToast('讀取 JSON 檔案失敗：' + err.message, 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    renderPadletView();
+  </script>
+</body>
+</html>
