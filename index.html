@@ -403,6 +403,9 @@
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="switchTeacherTab('card'); setPrintSheetMode('handwrite');" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow transition">
+              ✍️ 輸出紙本手填號碼單
+            </button>
             <button type="button" onclick="switchTeacherTab('overview')" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 transition">
               📊 查看全校 16 班總覽
             </button>
@@ -443,6 +446,9 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
+            <button onclick="switchTeacherTab('card'); setPrintSheetMode('handwrite');" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-sm flex items-center gap-1">
+              <span>✍️ 列印紙本手填選課號碼單</span>
+            </button>
             <button onclick="refreshAllData()" class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold flex items-center gap-1">
               <span>↻ 同步最新資料</span>
             </button>
@@ -467,7 +473,7 @@
           </button>
           <button onclick="switchTeacherTab('card')" id="tabBtn_card"
             class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
-            🖨️ 3. 輸出班級畫卡讀卡單 (A4列印)
+            🖨️ 3. 輸出畫卡讀卡單／紙本手填號碼單 (A4列印)
           </button>
           <button onclick="switchTeacherTab('scan')" id="tabBtn_scan"
             class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
@@ -550,29 +556,49 @@
         </div>
       </div>
 
-      <!-- 子頁籤 3：輸出班級畫卡讀卡單 (A4列印) -->
+      <!-- 子頁籤 3：輸出班級畫卡讀卡單 & 紙本手填選課號碼單 (A4列印) -->
       <div id="teacherTab_card" class="hidden space-y-4">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+          <!-- 表單類型切換列：光學畫卡讀卡單 vs 紙本手填選課號碼單 -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-black text-slate-600">📋 選擇紙本表單類型：</span>
+              <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+                <button type="button" id="btnPrintSheetMode_omr" onclick="setPrintSheetMode('omr')"
+                  class="px-3.5 py-1.5 rounded-lg text-xs font-black bg-blue-600 text-white shadow-sm transition">
+                  🎯 模式 A：光學畫卡讀卡單（塗黑圓圈 01~15）
+                </button>
+                <button type="button" id="btnPrintSheetMode_handwrite" onclick="setPrintSheetMode('handwrite')"
+                  class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:text-slate-950 transition">
+                  ✍️ 模式 B：紙本手填選課號碼單（手寫填寫課程號碼 01~15）
+                </button>
+              </div>
+            </div>
+            <span id="printSheetModeBadge" class="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold">
+              目前預覽：光學畫卡讀卡單
+            </span>
+          </div>
+
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h3 class="text-lg font-black text-slate-900">以班為單位：光學畫卡讀卡單輸出（支援紙張大小與縮放設定）</h3>
-              <p class="text-xs text-slate-500">
-                此讀卡單具備四角黑色定位塊（Fiducial Markers）與標準格位。可先選擇紙張大小與縮放比例（確保單頁完整印出不超出邊界），再點選列印！
+              <h3 id="printSheetMainTitle" class="text-lg font-black text-slate-900">以班為單位：光學畫卡讀卡單／紙本手填選課號碼單輸出</h3>
+              <p id="printSheetMainDesc" class="text-xs text-slate-500">
+                提供「光學畫卡塗黑讀卡單」與「紙本手填選課號碼單（左右雙欄大格子手寫號碼＋15科完整對照表＋課程正字統計格）」兩種格式，皆可自由調整紙張大小與縮放比例單頁列印！
               </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-700 bg-slate-100 px-3 py-2 rounded-xl cursor-pointer">
                 <input type="checkbox" id="chkPreFillBubbles" onchange="renderOmrSheet()" class="rounded text-blue-600">
-                <span>預先塗黑目前已選課項目</span>
+                <span id="chkPreFillLabel">預先填入／塗黑目前已選課項目</span>
               </label>
-              <button type="button" onclick="downloadOmrAsImage()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold shadow">
-                🖼 下載讀卡單圖檔 (PNG)
+              <button type="button" id="btnDownloadOmrPng" onclick="downloadOmrAsImage()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold shadow">
+                🖼 下載畫卡單圖檔 (PNG)
               </button>
-              <button type="button" onclick="printOmrSheet(false)" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow">
-                🖨️ 預覽並縮放列印本班讀卡單
+              <button type="button" onclick="printOmrSheet(false)" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow">
+                🖨️ 預覽列印本班表單
               </button>
-              <button type="button" onclick="printOmrSheet(true)" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow">
-                🖨️ 一次列印全校 16 班讀卡單
+              <button type="button" onclick="printOmrSheet(true)" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow">
+                🖨️ 一次列印全校 16 班
               </button>
             </div>
           </div>
@@ -626,11 +652,25 @@
               </div>
             </div>
           </div>
+
+          <!-- 紙本手填選課號碼單收回後：快速輸入號碼匯入面板（僅在 handwrite 模式顯示） -->
+          <div id="handwriteQuickEntryBox" class="hidden p-4 rounded-xl bg-emerald-50/80 border border-emerald-200 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-emerald-600 text-white text-[11px] font-black">⚡ 紙本手填號碼單收回後快速登錄</span>
+                <h4 class="font-black text-sm text-emerald-950 mt-1">直接在下方紙本預覽表的「選課號碼欄」輸入 1~15 號（按 Enter 或 Tab 自動跳下一號），完成後一鍵儲存全班！</h4>
+              </div>
+              <button type="button" onclick="saveMatrixSelections()"
+                class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm shadow transition">
+                💾 儲存紙本手填號碼選課結果
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- 螢幕上的讀卡單預覽（支援直接在讀卡單畫面點選圓圈塗黑選課） -->
+        <!-- 螢幕上的讀卡單 / 手填號碼單預覽 -->
         <div class="overflow-x-auto py-2 bg-slate-200/70 rounded-2xl border border-slate-300 p-4">
-          <div class="text-center text-xs text-indigo-900 bg-indigo-50 border border-indigo-200 rounded-xl py-2 px-3 mb-3 font-bold">
+          <div id="omrInteractiveHintBanner" class="text-center text-xs text-indigo-900 bg-indigo-50 border border-indigo-200 rounded-xl py-2 px-3 mb-3 font-bold">
             👆 <strong>畫面直接點選功能</strong>：您可直接用滑鼠<strong>點選下方讀卡單上的任一顆圓圈 (01~15)</strong> 替該學生塗黑選課（再次點選同一顆可退選），並會自動檢查每班每科人數上限！
           </div>
           <div id="omrSheetScreenWrapper"></div>
@@ -2733,11 +2773,303 @@
       toggleMatrixSelection(studentId, courseId);
     }
 
+    function setPrintSheetMode(mode) {
+      state.printSheetMode = mode === 'handwrite' ? 'handwrite' : 'omr';
+      const btnOmr = document.getElementById('btnPrintSheetMode_omr');
+      const btnHw = document.getElementById('btnPrintSheetMode_handwrite');
+      const badge = document.getElementById('printSheetModeBadge');
+      const hintBanner = document.getElementById('omrInteractiveHintBanner');
+      const quickEntryBox = document.getElementById('handwriteQuickEntryBox');
+      const btnPng = document.getElementById('btnDownloadOmrPng');
+      const preFillLabel = document.getElementById('chkPreFillLabel');
+
+      if (state.printSheetMode === 'handwrite') {
+        if (btnHw) btnHw.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black bg-emerald-600 text-white shadow-sm transition';
+        if (btnOmr) btnOmr.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:text-slate-950 transition';
+        if (badge) {
+          badge.className = 'px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold';
+          badge.textContent = '目前預覽：紙本手填選課號碼單';
+        }
+        if (hintBanner) {
+          hintBanner.className = 'text-center text-xs text-emerald-900 bg-emerald-50 border border-emerald-200 rounded-xl py-2 px-3 mb-3 font-bold';
+          hintBanner.innerHTML = '✍️ <strong>紙本手填選課號碼單預覽（亦支援畫面直接輸入登錄）</strong>：列印發給班級後，學生在「手填選課號碼」欄親筆填入 <strong>01 ~ 15</strong> 號；收回後導師亦可在下方格位直接輸入號碼快速登錄！';
+        }
+        if (quickEntryBox) quickEntryBox.classList.remove('hidden');
+        if (btnPng) btnPng.classList.add('hidden');
+        if (preFillLabel) preFillLabel.textContent = '預先帶入目前已選課號碼與科別';
+        resetMatrixDraftForActiveClass();
+      } else {
+        if (btnOmr) btnOmr.className = 'px-3.5 py-1.5 rounded-lg text-xs font-black bg-blue-600 text-white shadow-sm transition';
+        if (btnHw) btnHw.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:text-slate-950 transition';
+        if (badge) {
+          badge.className = 'px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold';
+          badge.textContent = '目前預覽：光學畫卡讀卡單';
+        }
+        if (hintBanner) {
+          hintBanner.className = 'text-center text-xs text-indigo-900 bg-indigo-50 border border-indigo-200 rounded-xl py-2 px-3 mb-3 font-bold';
+          hintBanner.innerHTML = '👆 <strong>畫面直接點選功能</strong>：您可直接用滑鼠<strong>點選下方讀卡單上的任一顆圓圈 (01~15)</strong> 替該學生塗黑選課（再次點選同一顆可退選），並會自動檢查每班每科人數上限！';
+        }
+        if (quickEntryBox) quickEntryBox.classList.add('hidden');
+        if (btnPng) btnPng.classList.remove('hidden');
+        if (preFillLabel) preFillLabel.textContent = '預先塗黑目前已選課項目';
+      }
+      renderOmrSheet();
+    }
+
+    function buildHandwriteSheetHtml(className, preFill = false, customSettings = null, interactiveScreen = false) {
+      const { paperSize, scale } = customSettings || getOmrSettingsFromUI();
+      const widthMm = getPaperWidthMm(paperSize);
+      const zoomVal = (scale / 100).toFixed(3);
+
+      const classStudents = state.students
+        .filter(s => s.className === className)
+        .sort((a, b) => a.seatNo - b.seatNo);
+
+      const studentBySeat = {};
+      classStudents.forEach(s => { studentBySeat[s.seatNo] = s; });
+
+      // 計算目前各課程已選人數（若在互動模式下以 matrixDraft 為準，否則以實際選課為準）
+      const courseCounts = {};
+      state.courses.forEach(c => { courseCounts[c.id] = 0; });
+      classStudents.forEach(s => {
+        const cid = interactiveScreen ? (state.matrixDraft[s.studentId] ?? s.courseId) : s.courseId;
+        if (cid && courseCounts[cid] !== undefined) courseCounts[cid]++;
+      });
+
+      // 上方 15 門課程編號對照與班級名額檢核表（3欄 × 5列，含手寫正字統計欄）
+      let courseRefRowsHtml = '';
+      for (let r = 0; r < 5; r++) {
+        let cells = '';
+        for (let col = 0; col < 3; col++) {
+          const idx = r + col * 5;
+          const c = state.courses[idx];
+          if (c) {
+            const limit = getCourseLimit(c);
+            const cnt = courseCounts[c.id] || 0;
+            const tallyStr = (preFill && cnt > 0) ? `${cnt} / ${limit} 人` : `□ □ (限${limit}人)`;
+            const overCls = (preFill && cnt > limit) ? 'color:#dc2626; font-weight:900;' : 'color:#334155;';
+            cells += `
+              <td style="width:5.5%; font-weight:900; background:#0f172a; color:#ffffff; font-size:8.5pt; text-align:center;">
+                ${String(c.id).padStart(2, '0')}
+              <\/td>
+              <td style="width:19.5%; text-align:left; padding:0.9mm 1.5mm; font-size:7.6pt;">
+                <strong>【${c.dept}】<\/strong>${c.name}
+              <\/td>
+              <td style="width:8.33%; text-align:center; font-size:7.2pt; background:#f8fafc; ${overCls}">
+                ${tallyStr}
+              <\/td>
+            `;
+          }
+        }
+        courseRefRowsHtml += `<tr style="height:5.3mm;">${cells}<\/tr>`;
+      }
+
+      // 下方全班 1~30 號左右雙欄手填選課號碼表（左欄 01~15 號，右欄 16~30 號，列高 8.6mm 超大好寫）
+      const renderStudentHandwriteCells = (seat) => {
+        const stu = studentBySeat[seat];
+        if (!stu) {
+          return `
+            <td style="font-weight:900; color:#94a3b8; background:#f8fafc;">${String(seat).padStart(2, '0')}<\/td>
+            <td style="font-family:monospace; font-size:7.2pt; color:#cbd5e1;">-<\/td>
+            <td style="color:#cbd5e1; font-size:8pt;">(空號)<\/td>
+            <td style="background:#f8fafc;"><\/td>
+            <td style="background:#f8fafc;"><\/td>
+          `;
+        }
+        const pickedCid = interactiveScreen
+          ? (state.matrixDraft[stu.studentId] !== undefined ? state.matrixDraft[stu.studentId] : stu.courseId)
+          : (preFill ? stu.courseId : null);
+        const courseObj = pickedCid ? state.courses.find(c => c.id === Number(pickedCid)) : null;
+
+        if (interactiveScreen) {
+          const isOver = courseObj && (courseCounts[courseObj.id] > getCourseLimit(courseObj));
+          return `
+            <td style="font-weight:900; font-size:9pt; background:#f1f5f9;">${String(seat).padStart(2, '0')}<\/td>
+            <td style="font-family:monospace; font-size:7.5pt; color:#334155;">${stu.studentId}<\/td>
+            <td style="font-weight:800; font-size:9pt; color:#0f172a;">${stu.name}<\/td>
+            <td style="padding:0.6mm 1mm; background:${pickedCid ? (isOver ? '#fee2e2' : '#ecfdf5') : '#fffbeb'};">
+              <input type="number" min="1" max="15"
+                id="hwInput_${stu.studentId}"
+                data-seat="${seat}"
+                value="${pickedCid ? pickedCid : ''}"
+                placeholder="填01~15"
+                onchange="handleHandwriteNumberInput('${stu.studentId}', this.value, ${seat})"
+                onkeydown="handleHandwriteKeydown(event, '${stu.studentId}', ${seat})"
+                style="width:100%; height:6.6mm; text-align:center; font-weight:900; font-size:10pt; border:1.5px solid ${pickedCid ? (isOver ? '#ef4444' : '#10b981') : '#94a3b8'}; border-radius:4px; background:#ffffff; color:#0f172a; outline:none;">
+            <\/td>
+            <td style="font-size:7.5pt; text-align:left; padding:0 1.5mm; color:${courseObj ? (isOver ? '#dc2626' : '#047857') : '#94a3b8'}; font-weight:700;">
+              ${courseObj ? `[${String(courseObj.id).padStart(2, '0')}] ${courseObj.dept}-${courseObj.name}${isOver ? ' (超額!)' : ''}` : '<span style="color:#cbd5e1;">尚未填寫<\/span>'}
+            <\/td>
+          `;
+        }
+
+        const numDisplay = (preFill && courseObj)
+          ? `<span style="font-size:11pt; font-weight:900; color:#0f172a;">${String(courseObj.id).padStart(2, '0')}<\/span>`
+          : `<span style="color:#cbd5e1; font-size:7.5pt;">【　　】<\/span>`;
+        const nameDisplay = (preFill && courseObj)
+          ? `<span style="font-size:7.8pt; font-weight:700; color:#1e293b;">${courseObj.dept} - ${courseObj.name}<\/span>`
+          : '';
+
+        return `
+          <td style="font-weight:900; font-size:9pt; background:#f8fafc;">${String(seat).padStart(2, '0')}<\/td>
+          <td style="font-family:monospace; font-size:7.5pt; color:#334155;">${stu.studentId}<\/td>
+          <td style="font-weight:800; font-size:9.2pt;">${stu.name}<\/td>
+          <td style="text-align:center;">${numDisplay}<\/td>
+          <td style="text-align:left; padding-left:1.5mm;">${nameDisplay}<\/td>
+        `;
+      };
+
+      let dualRowsHtml = '';
+      for (let i = 1; i <= 15; i++) {
+        const leftSeat = i;
+        const rightSeat = i + 15;
+        const rowBg = i % 2 === 0 ? 'omr-row-even' : '';
+        dualRowsHtml += `
+          <tr class="${rowBg}" style="height: 8.6mm;">
+            ${renderStudentHandwriteCells(leftSeat)}
+            <td style="width:1.2%; background:#334155; border:none; padding:0;"><\/td>
+            ${renderStudentHandwriteCells(rightSeat)}
+          <\/tr>
+        `;
+      }
+
+      return `
+        <div class="omr-sheet-container" style="width:${widthMm}mm; zoom:${zoomVal}; padding:4mm 5mm;">
+          <!-- 表單頂部標題區 -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2.2px solid #000; padding-bottom:2mm; margin-bottom:2.2mm;">
+            <div>
+              <div style="font-size:13.5pt; font-weight:900; letter-spacing:0.4px;">
+                115學年度 二年級生涯參訪（僑泰高中職業試探）班級紙本手填選課號碼單
+              <\/div>
+              <div style="font-size:8pt; color:#1e293b; margin-top:0.8mm; line-height:1.35;">
+                ✍️ <strong>填寫說明<\/strong>：請同學參考下方「15門實作課程代碼表」，在自己姓名旁<strong>「手填選課號碼」欄填入 <span style="text-decoration:underline;">01 ～ 15<\/span> 的課程兩碼編號<\/strong>。每人限選一門，<strong>每門課程每班限額 2 人<\/strong>！
+              <\/div>
+            <\/div>
+            <div style="text-align:right; shrink:0;">
+              <div style="font-size:14pt; font-weight:900; border:2px solid #000; padding:1mm 3.5mm; display:inline-block; background:#f8fafc;">
+                ${className}
+              <\/div>
+            <\/div>
+          <\/div>
+
+          <!-- 一、15門課程代碼對照與班級名額檢核表 -->
+          <div style="margin-bottom:2.5mm;">
+            <div style="font-size:8pt; font-weight:900; margin-bottom:1mm; display:flex; justify-content:space-between;">
+              <span>【一、僑泰高中 15 門職業試探課程編號對照暨班級名額統計表】（班長／學藝股長可於統計欄畫記檢核，每科最多 2 人）<\/span>
+              <span>參訪日期：116年1月6日（週三）13:00-15:25<\/span>
+            <\/div>
+            <table class="omr-table" style="border:1.5px solid #0f172a;">
+              <thead>
+                <tr style="background:#e2e8f0; height:4.8mm; font-size:7.5pt;">
+                  <th style="width:5.5%;">號碼<\/th>
+                  <th style="width:19.5%;">科別與實作課程名稱<\/th>
+                  <th style="width:8.33%;">本班畫記統計<\/th>
+                  <th style="width:5.5%;">號碼<\/th>
+                  <th style="width:19.5%;">科別與實作課程名稱<\/th>
+                  <th style="width:8.33%;">本班畫記統計<\/th>
+                  <th style="width:5.5%;">號碼<\/th>
+                  <th style="width:19.5%;">科別與實作課程名稱<\/th>
+                  <th style="width:8.33%;">本班畫記統計<\/th>
+                <\/tr>
+              <\/thead>
+              <tbody>
+                ${courseRefRowsHtml}
+              <\/tbody>
+            <\/table>
+          <\/div>
+
+          <!-- 二、全班學生手填選課號碼登記表（左右雙欄 01~15 / 16~30 號） -->
+          <div>
+            <div style="font-size:8pt; font-weight:900; margin-bottom:1mm; display:flex; justify-content:space-between;">
+              <span>【二、全班學生手填選課號碼登記表】（請以正楷清楚填寫 01 ~ 15 課程號碼）<\/span>
+              <span>本班學生人數：${classStudents.length} 人<\/span>
+            <\/div>
+            <table class="omr-table" style="border:1.8px solid #0f172a;">
+              <thead>
+                <tr style="background:#1e293b; color:#ffffff; height:6.2mm; font-size:8pt; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
+                  <th style="width:5%;">座號<\/th>
+                  <th style="width:10.5%;">學號<\/th>
+                  <th style="width:10.5%;">姓名<\/th>
+                  <th style="width:10.5%; background:#0f172a; color:#fde047;">✍️ 手填選課號碼<br><span style="font-size:6.5pt; font-weight:normal;">(請填 01~15)<\/span><\/th>
+                  <th style="width:12.9%;">課程名稱確認／簽名<\/th>
+                  <th style="width:1.2%; background:#334155; border:none; padding:0;"><\/th>
+                  <th style="width:5%;">座號<\/th>
+                  <th style="width:10.5%;">學號<\/th>
+                  <th style="width:10.5%;">姓名<\/th>
+                  <th style="width:10.5%; background:#0f172a; color:#fde047;">✍️ 手填選課號碼<br><span style="font-size:6.5pt; font-weight:normal;">(請填 01~15)<\/span><\/th>
+                  <th style="width:12.9%;">課程名稱確認／簽名<\/th>
+                <\/tr>
+              <\/thead>
+              <tbody>
+                ${dualRowsHtml}
+              <\/tbody>
+            <\/table>
+          <\/div>
+
+          <!-- 底部簽核列 -->
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:8pt; margin-top:2.8mm; color:#1e293b; font-weight:700;">
+            <span>班長／學藝股長清點簽名：____________________<\/span>
+            <span>導師簽章：____________________<\/span>
+            <span>承辦處室：輔導室資料組<\/span>
+          <\/div>
+        <\/div>
+      `;
+    }
+
+    function handleHandwriteNumberInput(studentId, rawVal, seatNo) {
+      const trimmed = String(rawVal || '').trim();
+      if (!trimmed) {
+        state.matrixDraft[studentId] = null;
+        renderOmrSheet();
+        return;
+      }
+      const num = parseInt(trimmed, 10);
+      if (isNaN(num) || num < 1 || num > 15) {
+        showToast('請輸入 1 ～ 15 之間的課程號碼！', 'error');
+        renderOmrSheet();
+        return;
+      }
+      const classStudents = state.students.filter(s => s.className === state.activeClass);
+      const courseObj = state.courses.find(c => c.id === num);
+      const limit = getCourseLimit(courseObj);
+      const alreadyPicked = classStudents.filter(
+        s => s.studentId !== studentId && (state.matrixDraft[s.studentId] ?? s.courseId) === num
+      );
+      if (alreadyPicked.length >= limit) {
+        showToast(`提醒：「${String(num).padStart(2, '0')}.${courseObj.name}」在本班已有 ${alreadyPicked.length} 人選取（上限 ${limit} 人：${alreadyPicked.map(s => s.name).join('、')}）！`, 'error');
+      }
+      state.matrixDraft[studentId] = num;
+      renderOmrSheet();
+    }
+
+    function handleHandwriteKeydown(e, studentId, seatNo) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleHandwriteNumberInput(studentId, e.target.value, seatNo);
+        // 自動跳至下一號學生的輸入框
+        setTimeout(() => {
+          for (let nextSeat = seatNo + 1; nextSeat <= 30; nextSeat++) {
+            const nextInput = document.querySelector(`input[data-seat="${nextSeat}"]`);
+            if (nextInput) {
+              nextInput.focus();
+              nextInput.select();
+              break;
+            }
+          }
+        }, 30);
+      }
+    }
+
     function renderOmrSheet() {
       const preFill = Boolean(document.getElementById('chkPreFillBubbles') && document.getElementById('chkPreFillBubbles').checked);
       const settings = getOmrSettingsFromUI();
-      const screenHtml = buildOmrSheetHtml(state.activeClass, preFill, settings, true);
-      const printHtml = buildOmrSheetHtml(state.activeClass, preFill, settings, false);
+      const isHandwrite = state.printSheetMode === 'handwrite';
+      const screenHtml = isHandwrite
+        ? buildHandwriteSheetHtml(state.activeClass, preFill, settings, true)
+        : buildOmrSheetHtml(state.activeClass, preFill, settings, true);
+      const printHtml = isHandwrite
+        ? buildHandwriteSheetHtml(state.activeClass, preFill, settings, false)
+        : buildOmrSheetHtml(state.activeClass, preFill, settings, false);
       const screenWrapper = document.getElementById('omrSheetScreenWrapper');
       const printArea = document.getElementById('omrPrintArea');
       if (screenWrapper) screenWrapper.innerHTML = screenHtml;
@@ -2885,9 +3217,12 @@
 
       const settings = getOmrSettingsFromUI();
       const preFill = Boolean(document.getElementById('chkPreFillBubbles') && document.getElementById('chkPreFillBubbles').checked);
+      const isHandwrite = state.printSheetMode === 'handwrite';
       const targetClasses = allClasses ? CLASS_ORDER : [state.activeClass || '八年1班'];
       const sheetsHtml = targetClasses.map((cls, idx) => {
-        const cardHtml = buildOmrSheetHtml(cls, preFill, settings);
+        const cardHtml = isHandwrite
+          ? buildHandwriteSheetHtml(cls, preFill, settings, false)
+          : buildOmrSheetHtml(cls, preFill, settings, false);
         const isLast = idx === targetClasses.length - 1;
         return isLast ? cardHtml : `<div class="omr-page-break">${cardHtml}<\/div>`;
       }).join('');
@@ -2909,9 +3244,10 @@
       }
 
       if (printWin && printWin.document) {
+        const docLabel = isHandwrite ? '紙本手填選課號碼單' : '畫卡讀卡單';
         const titleText = allClasses
-          ? '115學年度二年級生涯參訪_全校16班畫卡讀卡單'
-          : `115學年度二年級生涯參訪_${state.activeClass}_畫卡讀卡單`;
+          ? `115學年度二年級生涯參訪_全校16班_${docLabel}`
+          : `115學年度二年級生涯參訪_${state.activeClass}_${docLabel}`;
         const fullDoc = `<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
