@@ -149,6 +149,10 @@
           <span>📌 數位便條牆 (Padlet)</span>
         </button>
 
+        <button type="button" onclick="openHandwriteSheetDirectly(event)" class="text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-3 py-1.5 rounded-lg flex items-center gap-1 shadow transition" title="一鍵生成並預覽列印紙本手填選課號碼單">
+          <span>✍️ 紙本手填選課號碼單</span>
+        </button>
+
         <button type="button" onclick="quickAdminLogin(event)" class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-3 py-1.5 rounded-lg flex items-center gap-1 shadow transition" title="直接進入內部專案管理員後台">
           <span>🛡️ 管理員後台</span>
         </button>
@@ -293,6 +297,10 @@
                 <button type="button" onclick="quickAdminLogin(event)"
                   class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs sm:text-sm shadow transition">
                   🛡️ 一鍵進入管理員後台
+                </button>
+                <button type="button" onclick="openHandwriteSheetDirectly(event)"
+                  class="sm:col-span-2 w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm shadow transition flex items-center justify-center gap-1.5">
+                  <span>✍️ 一鍵生成／列印「紙本手填選課號碼單」</span>
                 </button>
               </div>
             </div>
@@ -471,9 +479,13 @@
             class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
             ☑️ 2. 導師勾選幫學生選課（矩陣表）
           </button>
-          <button onclick="switchTeacherTab('card')" id="tabBtn_card"
+          <button onclick="switchTeacherTab('card'); setPrintSheetMode('omr');" id="tabBtn_card"
             class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
-            🖨️ 3. 輸出畫卡讀卡單／紙本手填號碼單 (A4列印)
+            🖨️ 3A. 輸出光學畫卡讀卡單 (塗黑圓圈)
+          </button>
+          <button onclick="switchTeacherTab('card'); setPrintSheetMode('handwrite');" id="tabBtn_handwrite"
+            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-black bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 transition">
+            ✍️ 3B. 紙本手填選課號碼單 (手寫01~15號)
           </button>
           <button onclick="switchTeacherTab('scan')" id="tabBtn_scan"
             class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
@@ -2277,6 +2289,36 @@
       }
     }
 
+    async function openHandwriteSheetDirectly(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      if (!state.currentUser || (state.currentUser.role !== 'teacher' && state.currentUser.role !== 'admin')) {
+        await quickAdminLogin(e);
+      } else {
+        switchMainView('teacher');
+      }
+      switchTeacherTab('card');
+      setPrintSheetMode('handwrite');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast('已切換至「✍️ 紙本手填選課號碼單」預覽與列印模式！', 'success');
+    }
+
+    function updateCardSubTabHighlight() {
+      const btnCard = document.getElementById('tabBtn_card');
+      const btnHw = document.getElementById('tabBtn_handwrite');
+      if (state.activeTeacherTab === 'card') {
+        if (state.printSheetMode === 'handwrite') {
+          if (btnHw) btnHw.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-black bg-emerald-600 text-white shadow-sm transition';
+          if (btnCard) btnCard.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition';
+        } else {
+          if (btnCard) btnCard.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 text-white shadow-sm transition';
+          if (btnHw) btnHw.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-black bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 transition';
+        }
+      } else {
+        if (btnCard) btnCard.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition';
+        if (btnHw) btnHw.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-black bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 transition';
+      }
+    }
+
     function switchTeacherTab(tab) {
       state.activeTeacherTab = tab;
       const tabs = ['status', 'matrix', 'card', 'scan', 'overview', 'quota'];
@@ -2289,6 +2331,7 @@
           btn.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition';
         }
       });
+      updateCardSubTabHighlight();
 
       if (tab === 'matrix') {
         resetMatrixDraftForActiveClass();
@@ -2813,6 +2856,7 @@
         if (btnPng) btnPng.classList.remove('hidden');
         if (preFillLabel) preFillLabel.textContent = '預先塗黑目前已選課項目';
       }
+      updateCardSubTabHighlight();
       renderOmrSheet();
     }
 
